@@ -36,7 +36,8 @@ export function BottomNav() {
             "flex flex-col items-center gap-1 py-2 text-[11px] font-medium",
             pathname.startsWith("/more") ||
               pathname.startsWith("/reports") ||
-              pathname.startsWith("/payments")
+              pathname.startsWith("/payments") ||
+              pathname.startsWith("/expenses")
               ? "text-primary"
               : "text-muted-foreground"
           )}

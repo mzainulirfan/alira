@@ -14,6 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PeriodPicker } from "@/components/ui/period-picker";
 import { formatCurrency, formatNumber, formatShortPeriod } from "@/lib/format";
+import {
+  QUICK_ACTION_BY_KEY,
+  type QuickActionKey,
+} from "@/lib/quick-actions";
 import { cn } from "@/lib/utils";
 
 export type ActivityItem = {
@@ -36,6 +40,7 @@ type DashboardSummaryProps = {
   unpaidCount: number;
   overdueCount: number;
   activities: ActivityItem[];
+  quickActionKeys: QuickActionKey[];
 };
 
 const activityIcons: Record<ActivityItem["type"], IconSvgElement> = {
@@ -54,6 +59,7 @@ export function DashboardSummary({
   unpaidCount,
   overdueCount,
   activities,
+  quickActionKeys,
 }: DashboardSummaryProps) {
   const readingTotal = activeCustomers;
   const readingPct =
@@ -92,6 +98,8 @@ export function DashboardSummary({
       tone: "destructive",
     });
 
+  const quickActions = quickActionKeys.map((key) => QUICK_ACTION_BY_KEY[key]);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -102,10 +110,24 @@ export function DashboardSummary({
         <PeriodPicker period={period} />
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <QuickAction href="/meter-readings" icon={Tap01Icon} label="Catat Meter" />
-        <QuickAction href="/payments/new" icon={BanknoteIcon} label="Catat Pembayaran" />
-        <QuickAction href="/customers" icon={UserAdd01Icon} label="Kelola Pelanggan" />
+      <div
+        className={cn(
+          "grid gap-2",
+          quickActions.length === 1
+            ? "grid-cols-1"
+            : quickActions.length === 2
+              ? "grid-cols-2"
+              : "grid-cols-3"
+        )}
+      >
+        {quickActions.map((action) => (
+          <QuickAction
+            key={action.key}
+            href={action.href}
+            icon={action.icon}
+            label={action.label}
+          />
+        ))}
       </div>
 
       <section className="flex flex-col gap-2">

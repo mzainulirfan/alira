@@ -13,6 +13,8 @@ export type ReportSummary = {
   totalUnpaid: number;
   overdue: number;
   paymentsCount: number;
+  totalExpenses: number;
+  netCash: number;
 };
 
 export type ReportRow = {
@@ -29,12 +31,23 @@ export function periodToDate(period: string): string {
   return `${period}-01`;
 }
 
+function nextPeriodDate(period: string): string {
+  const [year, month] = period.split("-").map(Number);
+  return new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
+}
+
 export const getReport = cache(
   async (period: string): Promise<{ summary: ReportSummary; rows: ReportRow[] }> => {
     await verifySession();
     const supabase = createSupabaseAdmin();
 
-    const [{ data: customers }, { data: readings }, { data: bills }, { data: payments }] =
+    const [
+      { data: customers },
+      { data: readings },
+      { data: bills },
+      { data: payments },
+      { data: expenses },
+    ] =
       await Promise.all([
         supabase
           .from("pam_customers")
@@ -51,6 +64,11 @@ export const getReport = cache(
           .from("pam_payments")
           .select("bill_id, amount, bill:pam_bills(period)")
           .eq("bill.period", periodToDate(period)),
+        supabase
+          .from("pam_expenses")
+          .select("amount")
+          .gte("expense_date", periodToDate(period))
+          .lt("expense_date", nextPeriodDate(period)),
       ]);
 
     const paidByBill = new Map<string, number>();
@@ -105,6 +123,10 @@ export const getReport = cache(
       (s, r) => s + (r as { usage: number }).usage,
       0
     );
+    const totalExpenses = (expenses ?? []).reduce(
+      (s, expense) => s + (expense as { amount: number }).amount,
+      0
+    );
 
     return {
       summary: {
@@ -120,6 +142,8 @@ export const getReport = cache(
           (bills ?? []).filter((b) => (b as { status: string }).status === "overdue")
             .length ?? 0,
         paymentsCount: payments?.length ?? 0,
+        totalExpenses,
+        netCash: paidAmount - totalExpenses,
       },
       rows,
     };

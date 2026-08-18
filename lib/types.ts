@@ -1,3 +1,5 @@
+import type { QuickActionKey } from "@/lib/quick-actions";
+
 export type Customer = {
   id: string;
   customer_number: string;
@@ -51,6 +53,31 @@ export type Payment = {
   created_at: string;
 };
 
+export type ExpenseCategory =
+  | "maintenance"
+  | "pipe_repair"
+  | "equipment"
+  | "electricity_pump"
+  | "technician"
+  | "operations"
+  | "other";
+
+export type Expense = {
+  id: string;
+  expense_date: string;
+  title: string;
+  category: ExpenseCategory;
+  amount: number;
+  payee: string | null;
+  payment_method: "cash" | "transfer";
+  receipt_path: string | null;
+  receipt_url: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type AppSettings = {
   id: string;
   pam_name: string;
@@ -58,6 +85,7 @@ export type AppSettings = {
   phone: string | null;
   billing_due_day: number;
   passcode_hash: string | null;
+  quick_actions?: QuickActionKey[] | null;
   created_at: string;
   updated_at: string;
 };

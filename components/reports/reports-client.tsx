@@ -7,13 +7,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatShortPeriod } from "@/lib/format";
-import type { ReportRow } from "@/lib/data/reports";
+import type { ReportRow, ReportSummary } from "@/lib/data/reports";
 
 export function ReportsClient({
   period,
+  summary,
   rows,
 }: {
   period: string;
+  summary: ReportSummary;
   rows: ReportRow[];
 }) {
   const router = useRouter();
@@ -62,7 +64,7 @@ export function ReportsClient({
         <div>
           <h1 className="text-xl font-semibold">Laporan</h1>
           <p className="text-sm text-muted-foreground">
-            {formatShortPeriod(period)}
+            {formatShortPeriod(period)} · Saldo bersih {formatCurrency(summary.netCash)}
           </p>
         </div>
         <input

@@ -9,6 +9,9 @@ import {
   Delete01Icon,
   PowerIcon,
   Coins01Icon,
+  Calendar03Icon,
+  DiscountTag01Icon,
+  InvoiceIcon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,11 +66,11 @@ function TariffCard({
   hasActive: boolean;
 }) {
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-2 py-3">
+    <Card className={tariff.is_active ? "border-success/30" : undefined}>
+      <CardContent className="flex flex-col gap-3 py-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
-            <HugeiconsIcon icon={Coins01Icon} size={20} className="text-muted-foreground" />
+          <div className={tariff.is_active ? "shrink-0 text-success" : "shrink-0 text-muted-foreground"}>
+            <HugeiconsIcon icon={Coins01Icon} size={20} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -79,19 +82,28 @@ function TariffCard({
                 {tariff.is_active ? "Aktif" : "Nonaktif"}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(tariff.price_per_m3)} / m³
-              {tariff.monthly_fee > 0 &&
-                ` · Abonemen ${formatCurrency(tariff.monthly_fee)}`}
-              {tariff.effective_date &&
-                ` · Berlaku ${formatDate(tariff.effective_date)}`}
-            </p>
+            {tariff.effective_date && (
+              <p className="text-xs text-muted-foreground">
+                Berlaku {formatDate(tariff.effective_date)}
+              </p>
+            )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 border-t pt-2">
+
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <span className="text-base font-semibold">
+            {formatCurrency(tariff.price_per_m3)}
+            <span className="text-xs font-normal text-muted-foreground"> / m³</span>
+          </span>
+          <span className="text-sm text-muted-foreground">
+            Abonemen {formatCurrency(tariff.monthly_fee)}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <TariffForm tariff={tariff} />
           <ToggleTariff tariff={tariff} hasActive={hasActive} />
-          <DeleteTariff tariff={tariff} isActive={tariff.is_active} />
+          {!tariff.is_active && <DeleteTariff tariff={tariff} />}
         </div>
       </CardContent>
     </Card>
@@ -223,7 +235,7 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant={isEdit ? "outline" : "default"} size={isEdit ? "sm" : "default"} />}>
+      <DialogTrigger render={<Button variant={isEdit ? "ghost" : "default"} size={isEdit ? "sm" : "default"} />}>
         {isEdit ? (
           <>
             <HugeiconsIcon icon={Edit01Icon} />
@@ -238,7 +250,7 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
       </DialogTrigger>
       <DialogContent
         initialFocus={() => nameRef.current}
-        className="max-h-[calc(100%-2rem)] overflow-y-auto sm:max-w-md"
+        className="max-h-[calc(100%-2rem)] overflow-y-auto sm:max-w-lg"
       >
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Tarif" : "Tambah Tarif"}</DialogTitle>
@@ -253,7 +265,10 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
         >
           {isEdit && <input type="hidden" name="id" value={tariff.id} />}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="name">Nama Tarif</Label>
+            <Label htmlFor="name" className="flex items-center gap-1.5">
+              <HugeiconsIcon icon={DiscountTag01Icon} className="size-4 text-muted-foreground" />
+              Nama Tarif
+            </Label>
             <Input
               ref={nameRef}
               id="name"
@@ -261,6 +276,7 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
               value={values.name}
               onChange={(e) => update("name", e.target.value)}
               placeholder="cth. Tarif Reguler"
+              className="h-10"
               aria-invalid={!!errors.name}
               aria-describedby={errors.name ? "tariff-name-error" : undefined}
             />
@@ -272,7 +288,10 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="price_per_m3">Tarif per m³ (Rp)</Label>
+              <Label htmlFor="price_per_m3" className="flex items-center gap-1.5">
+                <HugeiconsIcon icon={Coins01Icon} className="size-4 text-muted-foreground" />
+                Tarif per m³ (Rp)
+              </Label>
               <Input
                 id="price_per_m3"
                 name="price_per_m3"
@@ -283,6 +302,7 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
                 value={values.price_per_m3}
                 onChange={(e) => update("price_per_m3", e.target.value)}
                 placeholder="cth. 3000"
+                className="h-10"
                 aria-invalid={!!errors.price_per_m3}
                 aria-describedby={
                   errors.price_per_m3 ? "tariff-price-error" : undefined
@@ -295,7 +315,10 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="monthly_fee">Abonemen (Rp)</Label>
+              <Label htmlFor="monthly_fee" className="flex items-center gap-1.5">
+                <HugeiconsIcon icon={InvoiceIcon} className="size-4 text-muted-foreground" />
+                Abonemen (Rp)
+              </Label>
               <Input
                 id="monthly_fee"
                 name="monthly_fee"
@@ -306,6 +329,7 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
                 value={values.monthly_fee}
                 onChange={(e) => update("monthly_fee", e.target.value)}
                 placeholder="cth. 10000"
+                className="h-10"
                 aria-invalid={!!errors.monthly_fee}
                 aria-describedby={
                   errors.monthly_fee ? "tariff-fee-error" : undefined
@@ -319,20 +343,28 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="effective_date">Tanggal Berlaku (opsional)</Label>
+            <Label htmlFor="effective_date" className="flex items-center gap-1.5">
+              <HugeiconsIcon icon={Calendar03Icon} className="size-4 text-muted-foreground" />
+              Tanggal Berlaku (opsional)
+            </Label>
             <Input
               id="effective_date"
               name="effective_date"
               type="date"
               value={values.effective_date}
               onChange={(e) => update("effective_date", e.target.value)}
+              className="h-10"
             />
           </div>
           {isEdit && tariff.is_active && (
             <input type="hidden" name="is_active" value="true" />
           )}
           {(!isEdit || !tariff.is_active) && (
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm">
+              <span className="flex items-center gap-2 font-medium">
+                <HugeiconsIcon icon={PowerIcon} className="size-4 text-muted-foreground" />
+                Jadikan tarif aktif
+              </span>
               <input
                 type="checkbox"
                 name="is_active"
@@ -341,7 +373,6 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
                 onChange={(e) => update("is_active", e.target.checked)}
                 className="size-4 accent-primary"
               />
-              Jadikan tarif aktif
             </label>
           )}
           <DialogFooter className="pt-2">
@@ -409,7 +440,7 @@ function ToggleTariff({
       </form>
       <Button
         type="button"
-        variant={isActive ? "outline" : "ghost"}
+        variant="outline"
         size="sm"
         onClick={() => (needsConfirm ? setConfirmOpen(true) : handleSubmit())}
       >
@@ -437,13 +468,7 @@ function ToggleTariff({
   );
 }
 
-function DeleteTariff({
-  tariff,
-  isActive,
-}: {
-  tariff: Tariff;
-  isActive: boolean;
-}) {
+function DeleteTariff({ tariff }: { tariff: Tariff }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -464,10 +489,9 @@ function DeleteTariff({
       </form>
       <Button
         type="button"
-        variant="ghost"
+        variant="destructive"
         size="sm"
-        disabled={isActive}
-        title={isActive ? "Nonaktifkan tarif dulu sebelum menghapus" : "Hapus tarif"}
+        title="Hapus tarif"
         onClick={() => setConfirmOpen(true)}
       >
         <HugeiconsIcon icon={Delete01Icon} />

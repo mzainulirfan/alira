@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { hashPasscode } from "@/lib/auth/passcode";
+import { isQuickActionKey, type QuickActionKey } from "@/lib/quick-actions";
 import type { AppSettings } from "@/lib/types";
 
 export type SettingsFormState = {
@@ -55,6 +56,63 @@ export async function updateProfileAction(
   return { success: true };
 }
 
+export async function updateQuickActionsAction(
+  _prev: SettingsFormState | undefined,
+  formData: FormData
+): Promise<SettingsFormState> {
+  await verifySession();
+
+  const raw = formData.get("quick_actions");
+  if (typeof raw !== "string") {
+    return { error: "Pilihan Quick Action tidak valid." };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { error: "Pilihan Quick Action tidak valid." };
+  }
+
+  if (
+    !Array.isArray(parsed) ||
+    parsed.length < 1 ||
+    parsed.length > 3 ||
+    !parsed.every(isQuickActionKey) ||
+    new Set(parsed).size !== parsed.length
+  ) {
+    return { error: "Pilih 1 sampai 3 Quick Action tanpa duplikasi." };
+  }
+
+  const quickActions = parsed as QuickActionKey[];
+  const supabase = createSupabaseAdmin();
+  const { data: settings, error: readError } = await supabase
+    .from("pam_app_settings")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (readError || !settings?.id) {
+    return { error: "Pengaturan aplikasi belum tersedia." };
+  }
+
+  const { error } = await supabase
+    .from("pam_app_settings")
+    .update({
+      quick_actions: quickActions,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", settings.id);
+
+  if (error) {
+    return { error: `Gagal menyimpan Quick Action: ${error.message}` };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/more/quick-actions");
+  return { success: true };
+}
+
 export async function updatePasscodeAction(
   _prev: SettingsFormState | undefined,
   formData: FormData
@@ -73,11 +131,8 @@ export async function updatePasscodeAction(
     return { error: "Input tidak valid." };
   }
 
-  if (next.length < 4 || next.length > 12) {
-    return { error: "Passcode baru harus 4–12 digit." };
-  }
-  if (!/^\d+$/.test(next)) {
-    return { error: "Passcode harus berupa angka." };
+  if (!/^\d{6}$/.test(next)) {
+    return { error: "Passcode baru harus tepat 6 digit angka." };
   }
   if (next !== confirm) {
     return { error: "Konfirmasi passcode tidak cocok." };

@@ -6,13 +6,18 @@ import {
   Settings01Icon,
   DiscountTag01Icon,
   LockPasswordIcon,
-  UserCircleIcon,
   Chart01Icon,
   BanknoteIcon,
+  BanknoteArrowUpIcon,
   ArrowRight01Icon,
+  DashboardSquareSettingIcon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { verifySession } from "@/lib/auth/dal";
+import { getAppSettings } from "@/lib/data/settings";
+import { normalizeQuickActionKeys } from "@/lib/quick-actions";
+import { LogoutButton } from "./logout-button";
 
 export const metadata: Metadata = {
   title: "Lainnya",
@@ -23,6 +28,7 @@ const menuItems: {
   description: string;
   href: string;
   icon: IconSvgElement;
+  badge?: string;
 }[] = [
   {
     title: "Profil Alira",
@@ -37,16 +43,16 @@ const menuItems: {
     icon: DiscountTag01Icon,
   },
   {
+    title: "Quick Action",
+    description: "Atur pintasan di Dashboard",
+    href: "/more/quick-actions",
+    icon: DashboardSquareSettingIcon,
+  },
+  {
     title: "Keamanan",
     description: "Ganti passcode masuk",
     href: "/more/security",
     icon: LockPasswordIcon,
-  },
-  {
-    title: "Akun",
-    description: "Keluar dari aplikasi",
-    href: "/more/account",
-    icon: UserCircleIcon,
   },
 ];
 
@@ -57,10 +63,10 @@ const shortcutItems: {
   icon: IconSvgElement;
 }[] = [
   {
-    title: "Laporan",
-    description: "Ringkasan bulanan dan unduh CSV",
-    href: "/reports",
-    icon: Chart01Icon,
+    title: "Pengeluaran",
+    description: "Catat dan kelola biaya operasional",
+    href: "/expenses",
+    icon: BanknoteArrowUpIcon,
   },
   {
     title: "Pembayaran",
@@ -68,27 +74,50 @@ const shortcutItems: {
     href: "/payments",
     icon: BanknoteIcon,
   },
+  {
+    title: "Laporan",
+    description: "Laporan bulanan dan unduh CSV",
+    href: "/reports",
+    icon: Chart01Icon,
+  },
 ];
 
 export default async function MorePage() {
   await verifySession();
+  const settings = await getAppSettings();
+  const activeQuickActions = normalizeQuickActionKeys(settings.quick_actions).length;
+  const settingsItems = menuItems.map((item) =>
+    item.href === "/more/quick-actions"
+      ? { ...item, badge: `${activeQuickActions} aktif` }
+      : item
+  );
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-xl font-semibold">Lainnya</h1>
         <p className="text-sm text-muted-foreground">
-          Pengaturan dan akses cepat.
+          Kelola aplikasi dan akses tambahan
         </p>
       </div>
 
       <Card>
         <CardContent className="flex flex-col gap-1 p-2">
-          {[...menuItems, ...shortcutItems].map((item) => (
+          {settingsItems.map((item) => (
             <MenuItem key={item.href} {...item} />
           ))}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardContent className="flex flex-col gap-1 p-2">
+          {shortcutItems.map((item) => (
+            <MenuItem key={item.href} {...item} />
+          ))}
+        </CardContent>
+      </Card>
+
+      <LogoutButton />
     </div>
   );
 }
@@ -98,11 +127,13 @@ function MenuItem({
   description,
   href,
   icon,
+  badge,
 }: {
   title: string;
   description: string;
   href: string;
   icon: IconSvgElement;
+  badge?: string;
 }) {
   return (
     <Link
@@ -116,6 +147,7 @@ function MenuItem({
         <p className="text-sm font-medium">{title}</p>
         <p className="truncate text-xs text-muted-foreground">{description}</p>
       </div>
+      {badge && <Badge variant="secondary">{badge}</Badge>}
       <HugeiconsIcon
         icon={ArrowRight01Icon}
         className="size-4 shrink-0 text-muted-foreground"

@@ -1,8 +1,10 @@
 import { verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { currentPeriod, periodToDate } from "@/lib/data/meter-readings";
+import { getAppSettings } from "@/lib/data/settings";
 import { DashboardSummary, type ActivityItem } from "@/components/dashboard/dashboard-summary";
 import { formatCurrency, formatMeter } from "@/lib/format";
+import { normalizeQuickActionKeys } from "@/lib/quick-actions";
 
 export const metadata = {
   title: "Dashboard",
@@ -22,6 +24,7 @@ export default async function DashboardPage({
   const supabase = createSupabaseAdmin();
 
   const [
+    settings,
     { data: customers },
     { data: readings },
     { data: bills },
@@ -29,6 +32,7 @@ export default async function DashboardPage({
     { data: recentReadings },
     { data: recentCustomers },
   ] = await Promise.all([
+    getAppSettings(),
     supabase.from("pam_customers").select("id, status"),
     supabase
       .from("pam_meter_readings")
@@ -116,6 +120,7 @@ export default async function DashboardPage({
       unpaidCount={unpaidCount}
       overdueCount={overdueCount}
       activities={topActivities}
+      quickActionKeys={normalizeQuickActionKeys(settings.quick_actions)}
     />
   );
 }

@@ -20,7 +20,7 @@ export default async function ReportsPage({
       ? params.period
       : currentPeriod();
 
-  const { rows } = await getReport(period);
+  const { summary, rows } = await getReport(period);
 
-  return <ReportsClient period={period} rows={rows} />;
+  return <ReportsClient period={period} summary={summary} rows={rows} />;
 }
