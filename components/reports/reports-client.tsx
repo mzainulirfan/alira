@@ -6,16 +6,14 @@ import { Chart01Icon, Download01Icon } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatMeter, formatShortPeriod } from "@/lib/format";
-import type { ReportRow, ReportSummary } from "@/lib/data/reports";
+import { formatCurrency, formatShortPeriod } from "@/lib/format";
+import type { ReportRow } from "@/lib/data/reports";
 
 export function ReportsClient({
   period,
-  summary,
   rows,
 }: {
   period: string;
-  summary: ReportSummary;
   rows: ReportRow[];
 }) {
   const router = useRouter();
@@ -75,17 +73,6 @@ export function ReportsClient({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <SummaryCard label="Total Pelanggan" value={String(summary.totalCustomers)} />
-        <SummaryCard label="Pelanggan Aktif" value={String(summary.activeCustomers)} />
-        <SummaryCard label="Total Pemakaian" value={formatMeter(summary.totalUsage)} />
-        <SummaryCard label="Total Tagihan" value={formatCurrency(summary.totalBilled)} />
-        <SummaryCard label="Pembayaran Masuk" value={formatCurrency(summary.totalPaid)} />
-        <SummaryCard label="Belum Dibayar" value={formatCurrency(summary.totalUnpaid)} />
-        <SummaryCard label="Menunggak" value={String(summary.overdue)} />
-        <SummaryCard label="Jumlah Pembayaran" value={String(summary.paymentsCount)} />
-      </div>
-
       <Button variant="outline" onClick={downloadCsv}>
         <HugeiconsIcon icon={Download01Icon} />
         Download CSV
@@ -142,16 +129,5 @@ export function ReportsClient({
         </Card>
       )}
     </div>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card size="sm">
-      <CardContent className="flex flex-col gap-1 py-3">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <span className="text-sm font-semibold">{value}</span>
-      </CardContent>
-    </Card>
   );
 }

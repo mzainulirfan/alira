@@ -8,6 +8,7 @@ import {
   GaugeIcon,
   Search01Icon,
   Cancel01Icon,
+  CheckmarkCircle01Icon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ export function MeterReadingsClient({
   tariff,
   query,
   status,
+  pendingCustomers,
 }: {
   rows: ReadingWithCustomer[];
   period: string;
@@ -39,6 +41,7 @@ export function MeterReadingsClient({
   tariff: Tariff | null;
   query: string;
   status: string;
+  pendingCustomers: ReadingWithCustomer[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,7 +49,6 @@ export function MeterReadingsClient({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const pending = total - done;
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   const counts = {
     all: total,
@@ -81,55 +83,19 @@ export function MeterReadingsClient({
     inputRef.current?.focus();
   }
 
+  function clearAllFilters() {
+    setSearch("");
+    updateParams({ q: "", status: "all" });
+  }
+
   const hasFilter = query !== "" || status !== "all";
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">Pencatatan Meter</h1>
-          <p className="text-sm text-muted-foreground">{formatShortPeriod(period)}</p>
-        </div>
+        <h1 className="text-xl font-semibold">Pencatatan Meter</h1>
         <PeriodPicker period={period} basePath="/meter-readings" />
       </div>
-
-      {!tariff && (
-        <p className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
-          Belum ada tarif aktif. Atur tarif di{" "}
-          <Link href="/more/tariffs" className="underline underline-offset-2">
-            Pengaturan Tarif
-          </Link>{" "}
-          agar perkiraan tagihan dapat dihitung.
-        </p>
-      )}
-
-      <section className="flex flex-col gap-2">
-        <SectionLabel>Ringkasan Pencatatan</SectionLabel>
-        <Card>
-          <CardContent className="flex flex-col gap-2 py-3">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{pct}%</span>{" "}
-              meter tercatat dari {total} pelanggan
-            </p>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            {pending > 0 ? (
-              <p className="text-sm">
-                <span className="font-semibold text-warning">{pending}</span>{" "}
-                pelanggan belum dicatat
-              </p>
-            ) : (
-              <p className="rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
-                Semua meter sudah dicatat untuk {formatShortPeriod(period)}.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </section>
 
       <div className="relative">
         <HugeiconsIcon
@@ -141,7 +107,7 @@ export function MeterReadingsClient({
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Cari nama, nomor pelanggan, nomor meter..."
+          placeholder="Cari pelanggan atau nomor meter..."
           className="h-10 w-full rounded-lg border border-input bg-transparent pr-9 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         />
         {search && (
@@ -173,67 +139,34 @@ export function MeterReadingsClient({
       </div>
 
       {rows.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-              <HugeiconsIcon icon={GaugeIcon} size={24} className="text-muted-foreground" />
-            </div>
-            <div>
-              <p className="font-medium">
-                {hasFilter ? "Tidak ada hasil." : "Belum ada pelanggan."}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {hasFilter
-                  ? "Tidak ada pelanggan yang cocok dengan pencarian atau filter."
-                  : "Tambahkan pelanggan aktif terlebih dahulu."}
-              </p>
-            </div>
-            {hasFilter ? (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearch("");
-                  updateParams({ q: "", status: "all" });
-                }}
-              >
-                Hapus Filter
-              </Button>
-            ) : null}
-          </CardContent>
-        </Card>
+        <EmptyState
+          status={status}
+          hasFilter={hasFilter}
+          period={period}
+          onClear={clearAllFilters}
+        />
       ) : (
         <div className="flex flex-col gap-2">
-          {rows.map(({ customer, reading, previousReading, previousPeriod }) => (
-            <Card key={customer.id}>
-              <CardContent className="flex flex-col gap-3 py-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
-                      <HugeiconsIcon icon={GaugeIcon} size={20} className="text-muted-foreground" />
+          {rows.map(({ customer, reading, previousReading, previousPeriod }) =>
+            reading ? (
+              <Card key={customer.id}>
+                <CardContent className="flex flex-col gap-3 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                        <HugeiconsIcon icon={GaugeIcon} size={20} className="text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{customer.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {customer.customer_number}
+                          {customer.meter_number ? ` · Meter ${customer.meter_number}` : ""}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{customer.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {customer.customer_number}
-                        {customer.meter_number ? ` · Meter ${customer.meter_number}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
                     <ReadingStatusBadge reading={reading} />
-                    {reading && (
-                      <ReadingForm
-                        customer={customer}
-                        period={period}
-                        reading={reading}
-                        previousReading={reading.previous_reading}
-                        tariff={tariff}
-                      />
-                    )}
                   </div>
-                </div>
 
-                {reading ? (
                   <div className="flex items-center justify-between text-sm">
                     <p className="text-muted-foreground">
                       {formatMeter(reading.previous_reading)} →{" "}
@@ -243,52 +176,135 @@ export function MeterReadingsClient({
                     </p>
                     <p className="text-muted-foreground">
                       Pemakaian{" "}
-                      <span className="font-medium text-foreground">
+                      <span className="font-semibold text-foreground">
                         {formatMeter(reading.usage)}
                       </span>
                     </p>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-2 text-sm">
-                    <p className="min-w-0 text-muted-foreground">
-                      Meter sebelumnya{" "}
-                      <span className="font-medium text-foreground">
-                        {formatMeter(previousReading)}
-                      </span>
-                      {previousPeriod
-                        ? ` · ${formatShortPeriod(previousPeriod)}`
-                        : " · belum pernah dicatat"}
-                    </p>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        render={<Link href={`/customers/${customer.id}`} />}
-                      >
-                        Detail
-                      </Button>
-                      <ReadingForm
-                        customer={customer}
-                        period={period}
-                        previousReading={previousReading}
-                        tariff={tariff}
-                      />
-                    </div>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      render={<Link href={`/customers/${customer.id}`} />}
+                    >
+                      Detail
+                    </Button>
+                    <ReadingForm
+                      customer={customer}
+                      period={period}
+                      reading={reading}
+                      previousReading={reading.previous_reading}
+                      tariff={tariff}
+                      trigger={<Button size="sm" variant="outline" />}
+                    />
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card key={customer.id} className="border-warning/30">
+                <CardContent className="flex flex-col gap-3 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
+                        <HugeiconsIcon icon={GaugeIcon} size={20} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{customer.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {customer.customer_number}
+                          {customer.meter_number ? ` · Meter ${customer.meter_number}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <ReadingStatusBadge reading={null} />
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <p className="text-muted-foreground">Meter sebelumnya</p>
+                    <p className="font-medium text-foreground">
+                      {previousPeriod
+                        ? formatMeter(previousReading)
+                        : "Belum ada"}
+                    </p>
+                  </div>
+
+                  <ReadingForm
+                    customer={customer}
+                    period={period}
+                    previousReading={previousReading}
+                    tariff={tariff}
+                    nextCustomerId={
+                      pendingCustomers[
+                        pendingCustomers.findIndex(
+                          (p) => p.customer.id === customer.id
+                        ) + 1
+                      ]?.customer.id ?? null
+                    }
+                    trigger={<Button className="w-full" />}
+                  />
+                </CardContent>
+              </Card>
+            )
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function EmptyState({
+  status,
+  hasFilter,
+  period,
+  onClear,
+}: {
+  status: string;
+  hasFilter: boolean;
+  period: string;
+  onClear: () => void;
+}) {
+  if (status === "pending") {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+          <div className="flex size-12 items-center justify-center rounded-full bg-success/15 text-success">
+            <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} />
+          </div>
+          <div>
+            <p className="font-medium">Semua selesai</p>
+            <p className="text-sm text-muted-foreground">
+              Tidak ada meter yang belum dicatat untuk{" "}
+              {formatShortPeriod(period)}.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-      {children}
-    </h2>
+    <Card>
+      <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+          <HugeiconsIcon icon={GaugeIcon} size={24} className="text-muted-foreground" />
+        </div>
+        <div>
+          <p className="font-medium">
+            {hasFilter ? "Pelanggan tidak ditemukan" : "Belum ada pelanggan"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {hasFilter
+              ? "Coba nama atau nomor meter lainnya."
+              : "Tambahkan pelanggan aktif terlebih dahulu."}
+          </p>
+        </div>
+        {hasFilter && (
+          <Button variant="outline" onClick={onClear}>
+            Hapus Filter
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }

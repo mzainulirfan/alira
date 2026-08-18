@@ -36,12 +36,6 @@ export default async function BillsPage({
   const filtered =
     status === "all" ? customerBills : customerBills.filter((b) => b.status === status);
 
-  const totalAmount = customerBills.reduce((s, b) => s + b.total_amount, 0);
-  const paidAmount = customerBills
-    .filter((b) => b.status === "paid")
-    .reduce((s, b) => s + b.total_amount, 0);
-  const unpaidAmount = totalAmount - paidAmount;
-
   return (
     <BillsClient
       bills={filtered}
@@ -49,9 +43,6 @@ export default async function BillsPage({
       period={period}
       status={status}
       customerId={customerId}
-      totalAmount={totalAmount}
-      paidAmount={paidAmount}
-      unpaidAmount={unpaidAmount}
       tariff={tariff}
       readingCount={readings.length}
     />

@@ -34,6 +34,7 @@ export function ReadingForm({
   previousReading,
   tariff,
   trigger,
+  nextCustomerId,
 }: {
   customer: Customer;
   period: string;
@@ -41,6 +42,7 @@ export function ReadingForm({
   previousReading: number;
   tariff: Tariff | null;
   trigger?: ReactElement;
+  nextCustomerId?: string | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -88,10 +90,33 @@ export function ReadingForm({
         `Pencatatan tersimpan. Pemakaian ${formatMeter(state.usage ?? 0)}.`
       );
       router.refresh();
+      if (state.next && nextCustomerId) {
+        window.dispatchEvent(
+          new CustomEvent("alira:open-reading", { detail: nextCustomerId })
+        );
+      }
     } else if (state?.error) {
       toast.error(state.error);
     }
-  }, [state, router]);
+  }, [state, router, nextCustomerId]);
+
+  useEffect(() => {
+    function handleOpenReading(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      if (detail === customer.id) {
+        const resetValue = reading ? String(reading.current_reading) : "";
+        setCurrent(resetValue);
+        setOriginal(resetValue);
+        setPhotoName(null);
+        if (photoRef.current) photoRef.current.value = "";
+        setConfirmOpen(false);
+        setOpen(true);
+      }
+    }
+    window.addEventListener("alira:open-reading", handleOpenReading);
+    return () =>
+      window.removeEventListener("alira:open-reading", handleOpenReading);
+  }, [customer.id, reading]);
 
   function closeForm() {
     if (dirty) {
@@ -250,21 +275,31 @@ export function ReadingForm({
             )}
           </div>
 
-          <DialogFooter className="pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={closeForm}
-            >
+          <DialogFooter className="gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={closeForm}>
               Batal
             </Button>
-            <Button type="submit" disabled={pending || usage === null}>
-              {pending
-                ? "Menyimpan..."
-                : reading
-                  ? "Simpan Perubahan"
-                  : "Simpan Pencatatan"}
-            </Button>
+            {reading ? (
+              <Button type="submit" disabled={pending || usage === null}>
+                {pending
+                  ? "Menyimpan..."
+                  : "Simpan Perubahan"}
+              </Button>
+            ) : (
+              <>
+                <Button type="submit" variant="outline" disabled={pending || usage === null}>
+                  Simpan
+                </Button>
+                <Button
+                  type="submit"
+                  name="next"
+                  value="true"
+                  disabled={pending || usage === null || !nextCustomerId}
+                >
+                  {pending ? "Menyimpan..." : "Simpan & Lanjut"}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

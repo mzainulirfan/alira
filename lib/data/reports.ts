@@ -58,6 +58,22 @@ export const getReport = cache(
       paidByBill.set(p.bill_id, (paidByBill.get(p.bill_id) ?? 0) + p.amount);
     }
 
+    const billByCustomer = new Map<string, {
+      id: string;
+      usage: number;
+      total_amount: number;
+      status: string;
+    }>();
+    for (const b of (bills ?? []) as Array<{
+      customer_id: string;
+      id: string;
+      usage: number;
+      total_amount: number;
+      status: string;
+    }>) {
+      billByCustomer.set(b.customer_id, b);
+    }
+
     const rows: ReportRow[] = [];
     for (const c of (customers ?? []) as Array<{
       id: string;
@@ -65,9 +81,7 @@ export const getReport = cache(
       name: string;
       status: string;
     }>) {
-      const bill = (bills ?? []).find(
-        (b) => (b as { customer_id: string }).customer_id === c.id
-      ) as { id: string; usage: number; total_amount: number; status: string } | undefined;
+      const bill = billByCustomer.get(c.id) ?? undefined;
       rows.push({
         customer_number: c.customer_number,
         name: c.name,

@@ -119,9 +119,6 @@ export function BillDetailClient({
             <CardTitle>Pembayaran</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="mb-3 text-sm text-muted-foreground">
-              Catat pembayaran untuk tagihan ini agar status berubah menjadi Lunas.
-            </p>
             <Button className="w-full" render={<Link href={`/payments/new?bill=${bill.id}`} />}>
               Catat Pembayaran
             </Button>

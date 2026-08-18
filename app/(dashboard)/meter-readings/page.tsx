@@ -23,15 +23,36 @@ export default async function MeterReadingsPage({
       ? params.period
       : currentPeriod();
   const query = typeof params.q === "string" ? params.q : "";
-  const status = typeof params.status === "string" ? params.status : "all";
 
   const [rows, tariff] = await Promise.all([
     getCustomerReadingStatus(period),
     getActiveTariff(),
   ]);
   const done = rows.filter((r) => r.reading).length;
+  const pending = rows.length - done;
 
-  const filtered = rows.filter((r) => {
+  const status =
+    typeof params.status === "string" &&
+    (params.status === "all" ||
+      params.status === "done" ||
+      params.status === "pending")
+      ? params.status
+      : pending > 0
+        ? "pending"
+        : "all";
+
+  const sorted = [...rows].sort((a, b) => {
+    const aDone = a.reading ? 1 : 0;
+    const bDone = b.reading ? 1 : 0;
+    if (aDone !== bDone) return aDone - bDone;
+    return a.customer.customer_number.localeCompare(
+      b.customer.customer_number
+    );
+  });
+
+  const pendingCustomers = sorted.filter((r) => !r.reading);
+
+  const filtered = sorted.filter((r) => {
     const matchesStatus =
       status === "all" ||
       (status === "done" && r.reading) ||
@@ -55,6 +76,7 @@ export default async function MeterReadingsPage({
       tariff={tariff}
       query={query}
       status={status}
+      pendingCustomers={pendingCustomers}
     />
   );
 }

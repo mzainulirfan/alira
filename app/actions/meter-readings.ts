@@ -10,6 +10,7 @@ export type SaveReadingState = {
   error?: string;
   success?: boolean;
   usage?: number;
+  next?: boolean;
 };
 
 async function ensureBucket(supabase: ReturnType<typeof createSupabaseAdmin>) {
@@ -56,6 +57,7 @@ export async function saveReadingAction(
   }
 
   const usage = currentReading - previousReading;
+  const next = formData.get("next") === "true";
   const supabase = createSupabaseAdmin();
 
   try {
@@ -97,5 +99,5 @@ export async function saveReadingAction(
 
   revalidatePath("/meter-readings");
   revalidatePath("/dashboard");
-  return { success: true, usage };
+  return { success: true, usage, next };
 }

@@ -1,13 +1,16 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 
 export function SubPageHeader({
   title,
   description,
+  action,
 }: {
   title: string;
   description?: string;
+  action?: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -18,11 +21,14 @@ export function SubPageHeader({
         <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />
         Lainnya
       </Link>
-      <div>
-        <h1 className="text-xl font-semibold">{title}</h1>
-        {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
-        )}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold">{title}</h1>
+          {description && (
+            <p className="text-sm text-muted-foreground">{description}</p>
+          )}
+        </div>
+        {action}
       </div>
     </div>
   );

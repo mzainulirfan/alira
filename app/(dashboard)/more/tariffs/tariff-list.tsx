@@ -7,7 +7,8 @@ import {
   Add01Icon,
   Edit01Icon,
   Delete01Icon,
-  Tick02Icon,
+  PowerIcon,
+  Coins01Icon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,61 +36,87 @@ import type { Tariff } from "@/lib/types";
 const noState: TariffFormState = {};
 
 export function TariffList({ tariffs }: { tariffs: Tariff[] }) {
+  const activeTariff = tariffs.find((t) => t.is_active) ?? null;
+  const inactiveTariffs = tariffs.filter((t) => !t.is_active);
+
   return (
     <div className="flex flex-col gap-3">
-      <TariffForm />
       {tariffs.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Belum ada tarif. Tambahkan tarif pertama untuk membuat tagihan.
-          </CardContent>
-        </Card>
+        <EmptyTariffState />
       ) : (
-        tariffs.map((t) => (
-          <Card key={t.id}>
-            <CardContent className="flex flex-col gap-3 py-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium">{t.name}</p>
-                  {t.is_active && <Badge variant="default">Aktif</Badge>}
-                </div>
-                <div className="flex items-center gap-1">
-                  <TariffForm tariff={t} />
-                  <ToggleTariff tariff={t} />
-                  <DeleteTariff tariff={t} />
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                <span className="text-muted-foreground">
-                  Tarif:{" "}
-                  <span className="font-medium text-foreground">
-                    {formatCurrency(t.price_per_m3)} / m³
-                  </span>
-                </span>
-                <span className="text-muted-foreground">
-                  Abonemen:{" "}
-                  <span className="font-medium text-foreground">
-                    {formatCurrency(t.monthly_fee)}
-                  </span>
-                </span>
-                {t.effective_date && (
-                  <span className="text-muted-foreground">
-                    Berlaku:{" "}
-                    <span className="font-medium text-foreground">
-                      {formatDate(t.effective_date)}
-                    </span>
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))
+        <div className="flex flex-col gap-3">
+          {activeTariff && <TariffCard tariff={activeTariff} hasActive />}
+          {inactiveTariffs.map((t) => (
+            <TariffCard key={t.id} tariff={t} hasActive={!!activeTariff} />
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
-function TariffForm({ tariff }: { tariff?: Tariff }) {
+function TariffCard({
+  tariff,
+  hasActive,
+}: {
+  tariff: Tariff;
+  hasActive: boolean;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-2 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+            <HugeiconsIcon icon={Coins01Icon} size={20} className="text-muted-foreground" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="truncate font-medium">{tariff.name}</p>
+              <Badge
+                variant={tariff.is_active ? "success" : "secondary"}
+                className="shrink-0"
+              >
+                {tariff.is_active ? "Aktif" : "Nonaktif"}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {formatCurrency(tariff.price_per_m3)} / m³
+              {tariff.monthly_fee > 0 &&
+                ` · Abonemen ${formatCurrency(tariff.monthly_fee)}`}
+              {tariff.effective_date &&
+                ` · Berlaku ${formatDate(tariff.effective_date)}`}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t pt-2">
+          <TariffForm tariff={tariff} />
+          <ToggleTariff tariff={tariff} hasActive={hasActive} />
+          <DeleteTariff tariff={tariff} isActive={tariff.is_active} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EmptyTariffState() {
+  return (
+    <Card>
+      <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+          <HugeiconsIcon icon={Coins01Icon} size={24} className="text-muted-foreground" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <p className="font-medium">Belum ada tarif</p>
+          <p className="text-sm text-muted-foreground">
+            Tambahkan tarif pertama agar tagihan dapat dibuat.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TariffForm({ tariff }: { tariff?: Tariff }) {
   const isEdit = !!tariff;
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -196,9 +223,12 @@ function TariffForm({ tariff }: { tariff?: Tariff }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="outline" size={isEdit ? "sm" : "default"} />}>
+      <DialogTrigger render={<Button variant={isEdit ? "outline" : "default"} size={isEdit ? "sm" : "default"} />}>
         {isEdit ? (
-          <HugeiconsIcon icon={Edit01Icon} />
+          <>
+            <HugeiconsIcon icon={Edit01Icon} />
+            Edit
+          </>
         ) : (
           <>
             <HugeiconsIcon icon={Add01Icon} />
@@ -212,9 +242,6 @@ function TariffForm({ tariff }: { tariff?: Tariff }) {
       >
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Tarif" : "Tambah Tarif"}</DialogTitle>
-          <DialogDescription>
-            Tarif aktif dipakai saat generate tagihan.
-          </DialogDescription>
         </DialogHeader>
         <form
           ref={formRef}
@@ -301,17 +328,22 @@ function TariffForm({ tariff }: { tariff?: Tariff }) {
               onChange={(e) => update("effective_date", e.target.value)}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="is_active"
-              value="true"
-              checked={values.is_active}
-              onChange={(e) => update("is_active", e.target.checked)}
-              className="size-4 accent-primary"
-            />
-            Jadikan tarif aktif
-          </label>
+          {isEdit && tariff.is_active && (
+            <input type="hidden" name="is_active" value="true" />
+          )}
+          {(!isEdit || !tariff.is_active) && (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="is_active"
+                value="true"
+                checked={values.is_active}
+                onChange={(e) => update("is_active", e.target.checked)}
+                className="size-4 accent-primary"
+              />
+              Jadikan tarif aktif
+            </label>
+          )}
           <DialogFooter className="pt-2">
             <Button type="button" variant="outline" onClick={closeForm}>
               Batal
@@ -345,39 +377,120 @@ function TariffForm({ tariff }: { tariff?: Tariff }) {
   );
 }
 
-function ToggleTariff({ tariff }: { tariff: Tariff }) {
+function ToggleTariff({
+  tariff,
+  hasActive,
+}: {
+  tariff: Tariff;
+  hasActive: boolean;
+}) {
+  const isActive = tariff.is_active;
+  const needsConfirm = !isActive && hasActive;
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function handleSubmit() {
+    formRef.current?.requestSubmit();
+  }
+
   return (
-    <form
-      action={async (formData) => {
-        await setTariffActiveAction(formData);
-        toast.success(
-          tariff.is_active ? "Tarif dinonaktifkan." : "Tarif diaktifkan."
-        );
-      }}
-    >
-      <input type="hidden" name="id" value={tariff.id} />
-      <input type="hidden" name="is_active" value={String(!tariff.is_active)} />
-      <Button type="submit" variant="ghost" size="icon-sm" title="Aktif/nonaktif">
-        <HugeiconsIcon icon={Tick02Icon} />
-        <span className="sr-only">Aktif/nonaktifkan</span>
+    <>
+      <form
+        ref={formRef}
+        action={async (formData) => {
+          await setTariffActiveAction(formData);
+          toast.success(
+            isActive ? "Tarif dinonaktifkan." : "Tarif diaktifkan."
+          );
+        }}
+      >
+        <input type="hidden" name="id" value={tariff.id} />
+        <input type="hidden" name="is_active" value={String(!isActive)} />
+      </form>
+      <Button
+        type="button"
+        variant={isActive ? "outline" : "ghost"}
+        size="sm"
+        onClick={() => (needsConfirm ? setConfirmOpen(true) : handleSubmit())}
+      >
+        <HugeiconsIcon icon={PowerIcon} />
+        {isActive ? "Nonaktifkan" : "Aktifkan"}
       </Button>
-    </form>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Jadikan tarif ini aktif?</DialogTitle>
+            <DialogDescription>
+              Tarif aktif saat ini akan dinonaktifkan dan digantikan oleh &quot;
+              {tariff.name}&quot;.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSubmit}>Ya, Aktifkan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
-function DeleteTariff({ tariff }: { tariff: Tariff }) {
+function DeleteTariff({
+  tariff,
+  isActive,
+}: {
+  tariff: Tariff;
+  isActive: boolean;
+}) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function handleSubmit() {
+    formRef.current?.requestSubmit();
+  }
+
   return (
-    <form
-      action={async (formData) => {
-        await deleteTariffAction(formData);
-        toast.success("Tarif dihapus.");
-      }}
-    >
-      <input type="hidden" name="id" value={tariff.id} />
-      <Button type="submit" variant="ghost" size="icon-sm" title="Hapus">
+    <>
+      <form
+        ref={formRef}
+        action={async (formData) => {
+          await deleteTariffAction(formData);
+          toast.success("Tarif dihapus.");
+        }}
+      >
+        <input type="hidden" name="id" value={tariff.id} />
+      </form>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        disabled={isActive}
+        title={isActive ? "Nonaktifkan tarif dulu sebelum menghapus" : "Hapus tarif"}
+        onClick={() => setConfirmOpen(true)}
+      >
         <HugeiconsIcon icon={Delete01Icon} />
-        <span className="sr-only">Hapus tarif</span>
+        Hapus
       </Button>
-    </form>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Hapus tarif &quot;{tariff.name}&quot;?</DialogTitle>
+            <DialogDescription>
+              Tarif tidak dapat dikembalikan setelah dihapus.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={handleSubmit}>
+              Hapus Tarif
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -9,6 +9,7 @@ import {
   InvoiceIcon,
   ArrowRight01Icon,
   MagicWand01Icon,
+  CheckmarkCircle01Icon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,11 +43,20 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "Dibatalkan",
 };
 
-const STATUS_VARIANT = (status: string) => {
-  if (status === "paid") return "success";
-  if (status === "overdue") return "destructive";
-  return "warning";
+const STATUS_VARIANT: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
+  unpaid: "warning",
+  paid: "success",
+  overdue: "destructive",
+  cancelled: "secondary",
 };
+
+function daysOverdue(bill: BillWithCustomer): number | null {
+  if (bill.status !== "overdue" || !bill.due_date) return null;
+  const due = new Date(`${bill.due_date}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.floor((today.getTime() - due.getTime()) / 86_400_000);
+}
 
 export function BillsClient({
   bills,
@@ -54,9 +64,6 @@ export function BillsClient({
   period,
   status,
   customerId,
-  totalAmount,
-  paidAmount,
-  unpaidAmount,
   tariff,
   readingCount,
 }: {
@@ -65,9 +72,6 @@ export function BillsClient({
   period: string;
   status: string;
   customerId: string | null;
-  totalAmount: number;
-  paidAmount: number;
-  unpaidAmount: number;
   tariff: Tariff | null;
   readingCount: number;
 }) {
@@ -80,8 +84,8 @@ export function BillsClient({
   );
   const [lastState, setLastState] = useState(state);
 
-  const paidPct = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
   const pendingCount = Math.max(0, readingCount - allBills.length);
+  const overdueCount = allBills.filter((b) => b.status === "overdue").length;
 
   if (state !== lastState) {
     setLastState(state);
@@ -118,7 +122,7 @@ export function BillsClient({
     all: allBills.length,
     unpaid: allBills.filter((b) => b.status === "unpaid").length,
     paid: allBills.filter((b) => b.status === "paid").length,
-    overdue: allBills.filter((b) => b.status === "overdue").length,
+    overdue: overdueCount,
   };
 
   const customerName = customerId
@@ -134,10 +138,7 @@ export function BillsClient({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">Tagihan</h1>
-          <p className="text-sm text-muted-foreground">{formatShortPeriod(period)}</p>
-        </div>
+        <h1 className="text-xl font-semibold">Tagihan</h1>
         <PeriodPicker period={period} basePath="/bills" />
       </div>
 
@@ -153,50 +154,10 @@ export function BillsClient({
         </div>
       )}
 
-      <section className="flex flex-col gap-2">
-        <SectionLabel>Ringkasan Tagihan</SectionLabel>
-        <div className="grid grid-cols-3 gap-3">
-          <Summary label="Total" value={formatCurrency(totalAmount)} />
-          <Summary label="Dibayar" value={formatCurrency(paidAmount)} />
-          <Summary
-            label="Belum"
-            value={formatCurrency(unpaidAmount)}
-            alert={unpaidAmount > 0}
-          />
-        </div>
-        <Card>
-          <CardContent className="flex flex-col gap-2 py-3">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">{paidPct}%</span>{" "}
-              tagihan sudah dibayar
-            </p>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${paidPct}%` }}
-              />
-            </div>
-            <p className="text-sm">
-              {unpaidAmount > 0 ? (
-                <>
-                  Sisa tagihan{" "}
-                  <span className="font-semibold text-warning">
-                    {formatCurrency(unpaidAmount)}
-                  </span>
-                </>
-              ) : (
-                "Semua tagihan sudah dibayar"
-              )}
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-
-      {!customerId && (
+      {!customerId && pendingCount > 0 && (
         <GenerateBillCard
           period={period}
           pendingCount={pendingCount}
-          allBillsCount={allBills.length}
           tariff={tariff}
           pending={pending}
           formAction={formAction}
@@ -206,73 +167,40 @@ export function BillsClient({
       )}
 
       <div className="flex gap-2 overflow-x-auto">
-        {STATUS_FILTERS.map((f) => (
-          <Button
-            key={f.key}
-            variant={status === f.key ? "default" : "outline"}
-            size="sm"
-            onClick={() => updateParams({ status: f.key })}
-          >
-            {f.label}
-            <span className="text-xs opacity-70">
-              {counts[f.key as keyof typeof counts]}
-            </span>
-          </Button>
-        ))}
+        {STATUS_FILTERS.map((f) => {
+          const count = counts[f.key as keyof typeof counts];
+          return (
+            <Button
+              key={f.key}
+              variant={status === f.key ? "default" : "outline"}
+              size="sm"
+              onClick={() => updateParams({ status: f.key })}
+            >
+              {f.label}
+              <span className={count === 0 ? "text-xs opacity-40" : "text-xs opacity-70"}>
+                {count}
+              </span>
+            </Button>
+          );
+        })}
       </div>
 
       {bills.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-              <HugeiconsIcon icon={InvoiceIcon} size={24} className="text-muted-foreground" />
-            </div>
-            <div>
-              <p className="font-medium">Belum ada tagihan.</p>
-              <p className="text-sm text-muted-foreground">
-                {customerId
-                  ? `Tidak ada tagihan untuk ${customerName ?? "pelanggan ini"} pada periode tersebut.`
-                  : allBills.length === 0
-                    ? "Catat meter terlebih dahulu, lalu generate tagihan."
-                    : "Tidak ada tagihan dengan filter ini."}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <EmptyState
+          status={status}
+          customerId={customerId}
+          customerName={customerName}
+          allBillsCount={allBills.length}
+          period={period}
+        />
       ) : (
         <div className="flex flex-col gap-2">
           {bills.map((bill) => (
-            <Link key={bill.id} href={`/bills/${bill.id}`}>
-              <Card>
-                <CardContent className="flex items-center gap-3 py-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <HugeiconsIcon icon={InvoiceIcon} size={20} className="text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate font-medium">{bill.customer.name}</p>
-                      <Badge
-                        variant={STATUS_VARIANT(bill.status) as "success" | "warning" | "destructive"}
-                        className="shrink-0"
-                      >
-                        {STATUS_LABEL[bill.status]}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {bill.customer.customer_number} · Pemakaian{" "}
-                      {formatMeter(bill.usage)}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1">
-                    <span className="font-semibold">{formatCurrency(bill.total_amount)}</span>
-                    <HugeiconsIcon
-                      icon={ArrowRight01Icon}
-                      className="size-4 text-muted-foreground"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+            <BillCard
+              key={bill.id}
+              bill={bill}
+              customerFilter={Boolean(customerId)}
+            />
           ))}
         </div>
       )}
@@ -280,30 +208,126 @@ export function BillsClient({
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function BillCard({
+  bill,
+  customerFilter,
+}: {
+  bill: BillWithCustomer;
+  customerFilter: boolean;
+}) {
+  const needPayment = bill.status === "unpaid" || bill.status === "overdue";
+  const overdue = daysOverdue(bill);
+
   return (
-    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-      {children}
-    </h2>
+    <Card>
+      <CardContent className="flex flex-col gap-2 py-3">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex size-10 shrink-0 items-center justify-center rounded-full ${
+              overdue !== null ? "bg-destructive/15 text-destructive" : "bg-muted"
+            }`}
+          >
+            <HugeiconsIcon
+              icon={InvoiceIcon}
+              size={20}
+              className={overdue !== null ? undefined : "text-muted-foreground"}
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <p className="truncate font-medium">{bill.customer.name}</p>
+              <Badge variant={STATUS_VARIANT[bill.status]} className="shrink-0">
+                {STATUS_LABEL[bill.status]}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {bill.customer.customer_number}
+              {customerFilter ? "" : ` · ${formatMeter(bill.usage)}`}
+              {overdue !== null ? ` · Lewat ${overdue} hari` : ""}
+            </p>
+          </div>
+          <span className="shrink-0 text-base font-semibold">
+            {formatCurrency(bill.total_amount)}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 border-t pt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<Link href={`/bills/${bill.id}`} />}
+          >
+            Detail
+            <HugeiconsIcon icon={ArrowRight01Icon} />
+          </Button>
+          {needPayment && (
+            <Button
+              size="sm"
+              render={<Link href={`/payments/new?bill=${bill.id}`} />}
+            >
+              Catat Pembayaran
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-function Summary({
-  label,
-  value,
-  alert = false,
+function EmptyState({
+  status,
+  customerId,
+  customerName,
+  allBillsCount,
+  period,
 }: {
-  label: string;
-  value: string;
-  alert?: boolean;
+  status: string;
+  customerId: string | null;
+  customerName: string | null;
+  allBillsCount: number;
+  period: string;
 }) {
+  let icon = <HugeiconsIcon icon={InvoiceIcon} size={24} className="text-muted-foreground" />;
+  let title = "Belum ada tagihan.";
+  let description = "Catat meter terlebih dahulu, lalu buat tagihan.";
+  let action: React.ReactNode = null;
+
+  if (status === "unpaid" && allBillsCount > 0) {
+    icon = (
+      <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} className="text-success" />
+    );
+    title = "Semua tagihan lunas";
+    description = `Tidak ada tagihan yang belum dibayar untuk ${formatShortPeriod(period)}.`;
+  } else if (status === "overdue" && allBillsCount > 0) {
+    title = "Tidak ada tunggakan";
+    description =
+      "Semua tagihan masih dalam periode pembayaran atau sudah lunas.";
+  } else if (status === "paid" && allBillsCount === 0) {
+    title = "Belum ada tagihan lunas";
+    description = `Belum ada tagihan yang lunas untuk ${formatShortPeriod(period)}.`;
+  } else if (customerId) {
+    description = `Tidak ada tagihan untuk ${customerName ?? "pelanggan ini"} pada periode tersebut.`;
+  } else if (allBillsCount > 0) {
+    description = "Tidak ada tagihan dengan filter ini.";
+  } else {
+    action = (
+      <Button variant="outline" render={<Link href="/meter-readings" />}>
+        Ke Pencatatan Meter
+      </Button>
+    );
+  }
+
   return (
-    <Card size="sm">
-      <CardContent className="flex flex-col gap-1 py-3">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <span className={alert ? "text-sm font-semibold text-warning" : "text-sm font-semibold"}>
-          {value}
-        </span>
+    <Card>
+      <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+          {icon}
+        </div>
+        <div>
+          <p className="font-medium">{title}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+        {action}
       </CardContent>
     </Card>
   );
@@ -312,7 +336,6 @@ function Summary({
 function GenerateBillCard({
   period,
   pendingCount,
-  allBillsCount,
   tariff,
   pending,
   formAction,
@@ -321,30 +344,27 @@ function GenerateBillCard({
 }: {
   period: string;
   pendingCount: number;
-  allBillsCount: number;
   tariff: Tariff | null;
   pending: boolean;
   formAction: (formData: FormData) => void;
   confirmOpen: boolean;
   setConfirmOpen: (open: boolean) => void;
 }) {
-  const canGenerate = pendingCount > 0;
-
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-3 py-4">
+    <Card className="border-primary/20 bg-primary/5">
+      <CardContent className="flex flex-col gap-3 py-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="font-medium">Generate Tagihan</p>
+            <p className="font-medium">Tagihan Belum Dibuat</p>
             <p className="text-sm text-muted-foreground">
-              Buat tagihan untuk {formatShortPeriod(period)}
-              {tariff ? ` menggunakan tarif ${tariff.name}` : ""}.
+              {pendingCount} pencatatan meter belum memiliki tagihan untuk{" "}
+              {formatShortPeriod(period)}.
             </p>
           </div>
           <HugeiconsIcon icon={MagicWand01Icon} className="mt-0.5 size-5 shrink-0 text-primary" />
         </div>
 
-        {!tariff ? (
+        {!tariff && (
           <p className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
             Belum ada tarif aktif. Atur tarif di{" "}
             <Link href="/more/tariffs" className="underline underline-offset-2">
@@ -352,36 +372,28 @@ function GenerateBillCard({
             </Link>{" "}
             terlebih dahulu.
           </p>
-        ) : canGenerate ? (
-          <p className="text-sm text-muted-foreground">
-            {pendingCount} pencatatan belum memiliki tagihan dan akan dibuat.
-          </p>
-        ) : (
-          <p className="rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs text-success">
-            Semua {allBillsCount} pencatatan sudah memiliki tagihan untuk periode ini.
-          </p>
         )}
 
         <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <DialogTrigger
-            render={<Button variant="outline" disabled={!canGenerate} />}
-          >
+          <DialogTrigger render={<Button disabled={!tariff} />}>
             <HugeiconsIcon icon={MagicWand01Icon} />
-            {pending ? "Membuat tagihan..." : "Generate Tagihan"}
+            {pending ? "Membuat tagihan..." : `Buat ${pendingCount} Tagihan`}
           </DialogTrigger>
           <DialogContent className="sm:max-w-sm">
             <DialogHeader>
-              <DialogTitle>Buat tagihan?</DialogTitle>
+              <DialogTitle>Buat {pendingCount} Tagihan?</DialogTitle>
               <DialogDescription>
+                Tagihan akan dibuat dari pencatatan meter periode{" "}
+                {formatShortPeriod(period)} menggunakan tarif aktif.
                 {tariff && (
                   <>
-                    Tarif aktif: <span className="font-medium text-foreground">{tariff.name}</span>{" "}
-                    ({formatCurrency(tariff.price_per_m3)}/m³ +{" "}
-                    {formatCurrency(tariff.monthly_fee)} abonemen)
+                    <br />
+                    {pendingCount} pelanggan · {formatCurrency(tariff.price_per_m3)}/m³
+                    {tariff.monthly_fee > 0
+                      ? ` · Abonemen ${formatCurrency(tariff.monthly_fee)}`
+                      : ""}
                   </>
                 )}
-                <br />
-                {pendingCount} tagihan baru akan dibuat untuk {formatShortPeriod(period)}.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -391,7 +403,7 @@ function GenerateBillCard({
               <form action={formAction}>
                 <input type="hidden" name="period" value={period} />
                 <Button type="submit" disabled={pending}>
-                  {pending ? "Membuat..." : "Ya, Buat Tagihan"}
+                  {pending ? "Membuat..." : "Buat Tagihan"}
                 </Button>
               </form>
             </DialogFooter>

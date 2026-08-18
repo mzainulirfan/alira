@@ -243,11 +243,7 @@ function QuickActions({
   unpaidBill: Bill | null;
 }) {
   if (customer.status !== "active") {
-    return (
-      <p className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
-        Pelanggan nonaktif. Aktifkan untuk mencatat meter atau pembayaran baru.
-      </p>
-    );
+    return null;
   }
 
   const previousReading = lastReading?.current_reading ?? 0;

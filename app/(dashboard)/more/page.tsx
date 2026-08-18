@@ -82,31 +82,13 @@ export default async function MorePage() {
         </p>
       </div>
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Pengaturan
-        </h2>
-        <Card>
-          <CardContent className="flex flex-col gap-1 p-2">
-            {menuItems.map((item) => (
-              <MenuItem key={item.href} {...item} />
-            ))}
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Akses Cepat
-        </h2>
-        <Card>
-          <CardContent className="flex flex-col gap-1 p-2">
-            {shortcutItems.map((item) => (
-              <MenuItem key={item.href} {...item} />
-            ))}
-          </CardContent>
-        </Card>
-      </section>
+      <Card>
+        <CardContent className="flex flex-col gap-1 p-2">
+          {[...menuItems, ...shortcutItems].map((item) => (
+            <MenuItem key={item.href} {...item} />
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }

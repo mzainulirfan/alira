@@ -54,24 +54,6 @@ export const getPeriodReadings = cache(
   }
 );
 
-export const getLatestReadingByCustomer = cache(
-  async (customerId: string): Promise<MeterReading | null> => {
-    await verifySession();
-    const supabase = createSupabaseAdmin();
-
-    const { data, error } = await supabase
-      .from("pam_meter_readings")
-      .select("*")
-      .eq("customer_id", customerId)
-      .order("period", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) throw new Error(error.message);
-    return data as MeterReading | null;
-  }
-);
-
 export const getCustomerReadingStatus = cache(
   async (period: string): Promise<ReadingWithCustomer[]> => {
     const [customers, readings] = await Promise.all([
@@ -82,26 +64,55 @@ export const getCustomerReadingStatus = cache(
     const readingsByCustomer = new Map<string, MeterReading>();
     for (const r of readings) readingsByCustomer.set(r.customer_id, r);
 
-    const result: ReadingWithCustomer[] = [];
-    for (const customer of customers) {
-      const reading = readingsByCustomer.get(customer.id) ?? null;
-      let previousReading = 0;
-      let previousPeriod: string | null = null;
+    const missing = customers.filter((c) => !readingsByCustomer.has(c.id));
 
-      if (reading) {
-        previousReading = reading.previous_reading;
-        previousPeriod = reading.period.slice(0, 7);
-      } else {
-        const latest = await getLatestReadingByCustomer(customer.id);
-        if (latest) {
-          previousReading = latest.current_reading;
-          previousPeriod = dateToPeriod(latest.period);
-        }
+    const latestByCustomer = new Map<string, MeterReading>();
+    if (missing.length > 0) {
+      const supabase = createSupabaseAdmin();
+      const chunk = 200;
+      const chunks: string[][] = [];
+      for (let i = 0; i < missing.length; i += chunk) {
+        chunks.push(missing.slice(i, i + chunk).map((c) => c.id));
       }
 
-      result.push({ customer, reading, previousReading, previousPeriod });
+      const results = await Promise.all(
+        chunks.map((ids) =>
+          supabase
+            .from("pam_meter_readings")
+            .select("*")
+            .in("customer_id", ids)
+            .order("period", { ascending: false })
+        )
+      );
+
+      for (const { data, error } of results) {
+        if (error) throw new Error(error.message);
+        for (const r of (data ?? []) as MeterReading[]) {
+          if (!latestByCustomer.has(r.customer_id)) {
+            latestByCustomer.set(r.customer_id, r);
+          }
+        }
+      }
     }
 
-    return result;
+    return customers.map((customer) => {
+      const reading = readingsByCustomer.get(customer.id) ?? null;
+      if (reading) {
+        return {
+          customer,
+          reading,
+          previousReading: reading.previous_reading,
+          previousPeriod: reading.period.slice(0, 7),
+        };
+      }
+
+      const latest = latestByCustomer.get(customer.id) ?? null;
+      return {
+        customer,
+        reading: null,
+        previousReading: latest ? latest.current_reading : 0,
+        previousPeriod: latest ? dateToPeriod(latest.period) : null,
+      };
+    });
   }
 );
