@@ -9,22 +9,34 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="flex flex-1 items-center justify-center bg-muted/40 px-4 py-10">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <div className="flex size-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-            <HugeiconsIcon icon={DropletIcon} size={32} />
+    <main className="flex min-h-dvh flex-col bg-muted/40 px-4 pt-16 md:pt-24">
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+            <HugeiconsIcon icon={DropletIcon} size={26} />
           </div>
-          <h1 className="text-2xl font-medium">Alira</h1>
-          <p className="text-sm text-muted-foreground">
-            Kelola air, meter, dan tagihan dalam satu tempat.
-          </p>
+          <div className="flex flex-col gap-1">
+            <span className="text-2xl font-semibold text-foreground">Alira</span>
+            <p className="text-sm text-muted-foreground">
+              Kelola air, meter, dan tagihan dalam satu tempat.
+            </p>
+          </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6">
-          <LoginForm />
-        </div>
+        <section className="mt-8 flex flex-col rounded-[20px] border border-border bg-card p-6">
+          <h1 className="text-xl font-semibold text-foreground">Masuk ke Alira</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Masukkan passcode 6 digit untuk melanjutkan.
+          </p>
+          <div className="mt-6">
+            <LoginForm />
+          </div>
+        </section>
       </div>
+
+      <footer className="mx-auto w-full max-w-sm py-6 text-center text-xs text-muted-foreground">
+        Dikelola oleh pengurus PAM setempat
+      </footer>
     </main>
   );
 }
