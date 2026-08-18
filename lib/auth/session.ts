@@ -2,13 +2,15 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
+import { isStaffRole } from "@/lib/staff";
+import type { StaffRole } from "@/lib/types";
 
 const SESSION_COOKIE = "pam_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 
 export type SessionPayload = {
   userId: string;
-  role: string;
+  role: StaffRole;
   expiresAt: number;
 };
 
@@ -47,9 +49,10 @@ export async function getSession(): Promise<SessionPayload | null> {
     const { payload } = await jwtVerify(token, getSecretKey(), {
       algorithms: ["HS256"],
     });
+    if (!isStaffRole(payload.role)) return null;
     return {
       userId: String(payload.userId),
-      role: String(payload.role),
+      role: payload.role,
       expiresAt: Number(payload.expiresAt),
     };
   } catch {

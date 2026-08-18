@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { verifySession } from "@/lib/auth/dal";
+import { getCurrentProfile } from "@/lib/auth/dal";
 import { SubPageHeader } from "@/components/layout/sub-page-header";
 import { AccountForm } from "./account-form";
 
@@ -8,15 +8,15 @@ export const metadata: Metadata = {
 };
 
 export default async function AccountPage() {
-  await verifySession();
+  const profile = await getCurrentProfile();
 
   return (
     <div className="flex flex-col gap-4">
       <SubPageHeader
         title="Akun"
-        description="Keluar dari aplikasi ini."
+        description="Informasi akun yang sedang digunakan."
       />
-      <AccountForm />
+      <AccountForm profile={profile} />
     </div>
   );
 }

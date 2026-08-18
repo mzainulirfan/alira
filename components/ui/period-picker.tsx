@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon } from "@hugeicons/core-free-icons";
 import { formatShortPeriod } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 function monthOptions(): { value: string; label: string }[] {
   const options: { value: string; label: string }[] = [];
@@ -19,9 +20,11 @@ function monthOptions(): { value: string; label: string }[] {
 export function PeriodPicker({
   period,
   basePath = "/dashboard",
+  className,
 }: {
   period: string;
   basePath?: string;
+  className?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,7 +37,7 @@ export function PeriodPicker({
   }
 
   return (
-    <div className="relative">
+    <div className={cn("relative shrink-0", className)}>
       <HugeiconsIcon
         icon={Calendar01Icon}
         className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -43,7 +46,7 @@ export function PeriodPicker({
         value={period}
         onChange={(e) => changePeriod(e.target.value)}
         aria-label="Pilih periode"
-        className="h-8 appearance-none rounded-lg border border-border bg-card pl-8 pr-8 text-sm font-medium focus:border-ring focus:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="h-8 w-full appearance-none rounded-lg border border-border bg-card pl-8 pr-8 text-sm font-medium focus:border-ring focus:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

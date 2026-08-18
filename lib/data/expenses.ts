@@ -1,10 +1,11 @@
 import "server-only";
 
 import { cache } from "react";
-import { verifySession } from "@/lib/auth/dal";
+import { requireRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { isExpenseCategory } from "@/lib/expenses";
 import type { Expense, ExpenseCategory } from "@/lib/types";
+import { FINANCE_ROLES } from "@/lib/staff";
 
 function periodBounds(period: string): { start: string; end: string } {
   const [year, month] = period.split("-").map(Number);
@@ -14,7 +15,7 @@ function periodBounds(period: string): { start: string; end: string } {
 
 export const getExpenses = cache(
   async (period: string, category?: string): Promise<Expense[]> => {
-    await verifySession();
+    await requireRole(FINANCE_ROLES);
     const supabase = createSupabaseAdmin();
     const { start, end } = periodBounds(period);
 
@@ -38,7 +39,7 @@ export const getExpenses = cache(
 
 export const getExpenseById = cache(
   async (id: string): Promise<Expense | null> => {
-    await verifySession();
+    await requireRole(FINANCE_ROLES);
     const supabase = createSupabaseAdmin();
     const { data, error } = await supabase
       .from("pam_expenses")

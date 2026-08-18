@@ -26,7 +26,7 @@ export default function LoginPage() {
         <section className="mt-8 flex flex-col rounded-[20px] border border-border bg-card p-6">
           <h1 className="text-xl font-semibold text-foreground">Masuk ke Alira</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Masukkan passcode 6 digit untuk melanjutkan.
+            Masukkan username dan passcode 6 digit.
           </p>
           <div className="mt-6">
             <LoginForm />

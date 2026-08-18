@@ -11,12 +11,15 @@ import {
   BanknoteArrowUpIcon,
   ArrowRight01Icon,
   DashboardSquareSettingIcon,
+  UserGroupIcon,
+  UserIcon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { verifySession } from "@/lib/auth/dal";
 import { getAppSettings } from "@/lib/data/settings";
 import { normalizeQuickActionKeys } from "@/lib/quick-actions";
+import { canManageFinance } from "@/lib/staff";
 import { LogoutButton } from "./logout-button";
 
 export const metadata: Metadata = {
@@ -29,24 +32,41 @@ const menuItems: {
   href: string;
   icon: IconSvgElement;
   badge?: string;
+  adminOnly?: boolean;
 }[] = [
   {
     title: "Profil Alira",
     description: "Nama, alamat, telepon, jatuh tempo",
     href: "/more/profile",
     icon: Settings01Icon,
+    adminOnly: true,
   },
   {
     title: "Tarif",
     description: "Kelola tarif air dan abonemen",
     href: "/more/tariffs",
     icon: DiscountTag01Icon,
+    adminOnly: true,
   },
   {
     title: "Quick Action",
     description: "Atur pintasan di Dashboard",
     href: "/more/quick-actions",
     icon: DashboardSquareSettingIcon,
+    adminOnly: true,
+  },
+  {
+    title: "Admin & Pegawai",
+    description: "Kelola akun dan hak akses",
+    href: "/more/staff",
+    icon: UserGroupIcon,
+    adminOnly: true,
+  },
+  {
+    title: "Akun",
+    description: "Lihat identitas akun dan role",
+    href: "/more/account",
+    icon: UserIcon,
   },
   {
     title: "Keamanan",
@@ -83,14 +103,15 @@ const shortcutItems: {
 ];
 
 export default async function MorePage() {
-  await verifySession();
+  const session = await verifySession();
   const settings = await getAppSettings();
   const activeQuickActions = normalizeQuickActionKeys(settings.quick_actions).length;
   const settingsItems = menuItems.map((item) =>
     item.href === "/more/quick-actions"
       ? { ...item, badge: `${activeQuickActions} aktif` }
       : item
-  );
+  ).filter((item) => !item.adminOnly || session.role === "admin");
+  const visibleShortcuts = canManageFinance(session.role) ? shortcutItems : [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -109,13 +130,15 @@ export default async function MorePage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="flex flex-col gap-1 p-2">
-          {shortcutItems.map((item) => (
-            <MenuItem key={item.href} {...item} />
-          ))}
-        </CardContent>
-      </Card>
+      {visibleShortcuts.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col gap-1 p-2">
+            {visibleShortcuts.map((item) => (
+              <MenuItem key={item.href} {...item} />
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <LogoutButton />
     </div>

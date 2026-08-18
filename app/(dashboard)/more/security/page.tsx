@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { verifySession } from "@/lib/auth/dal";
+import { getCurrentProfile } from "@/lib/auth/dal";
 import { SecurityForm } from "./security-form";
 
 export const metadata: Metadata = {
@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SecurityPage() {
-  await verifySession();
+  const profile = await getCurrentProfile();
 
-  return <SecurityForm />;
+  return <SecurityForm required={profile.must_change_passcode} />;
 }

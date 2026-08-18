@@ -6,9 +6,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { DropletIcon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { navItems } from "./nav-items";
+import type { StaffRole } from "@/lib/types";
 
-export function Sidebar() {
+export function Sidebar({ role }: { role: StaffRole }) {
   const pathname = usePathname();
+  const visibleItems = navItems.filter(
+    (item) => !item.roles || item.roles.includes(role)
+  );
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-surface-soft md:flex">
@@ -20,7 +24,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const active =
             pathname === item.href ||
             pathname.startsWith(`${item.href}/`) ||

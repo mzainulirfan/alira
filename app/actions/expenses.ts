@@ -2,9 +2,10 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { verifySession } from "@/lib/auth/dal";
+import { assertRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { isExpenseCategory } from "@/lib/expenses";
+import { FINANCE_ROLES } from "@/lib/staff";
 
 const EXPENSE_RECEIPTS_BUCKET = "expense-receipts";
 const MAX_RECEIPT_SIZE = 5 * 1024 * 1024;
@@ -38,7 +39,7 @@ export async function saveExpenseAction(
   _prev: ExpenseFormState | undefined,
   formData: FormData
 ): Promise<ExpenseFormState> {
-  await verifySession();
+  const session = await assertRole(FINANCE_ROLES);
 
   const idValue = formData.get("id");
   const id = typeof idValue === "string" && idValue ? idValue : null;
@@ -141,7 +142,11 @@ export async function saveExpenseAction(
 
     const { error } = id
       ? await supabase.from("pam_expenses").update(payload).eq("id", id)
-      : await supabase.from("pam_expenses").insert({ id: expenseId, ...payload });
+      : await supabase.from("pam_expenses").insert({
+          id: expenseId,
+          ...payload,
+          created_by: session.userId,
+        });
 
     if (error) {
       if (!id && receiptPath) {
@@ -161,7 +166,7 @@ export async function saveExpenseAction(
 }
 
 export async function deleteExpenseAction(formData: FormData): Promise<void> {
-  await verifySession();
+  await assertRole(FINANCE_ROLES);
 
   const id = formData.get("id");
   if (typeof id !== "string" || !id) throw new Error("Pengeluaran tidak valid.");
@@ -190,7 +195,7 @@ export async function deleteExpenseAction(formData: FormData): Promise<void> {
 export async function removeExpenseReceiptAction(
   formData: FormData
 ): Promise<void> {
-  await verifySession();
+  await assertRole(FINANCE_ROLES);
 
   const id = formData.get("id");
   if (typeof id !== "string" || !id) throw new Error("Pengeluaran tidak valid.");

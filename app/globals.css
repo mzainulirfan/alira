@@ -194,3 +194,40 @@
     @apply font-sans;
   }
 }
+
+[data-slot="dialog-content"]:has([data-confirmation-dialog]) {
+  width: calc(100% - 3rem) !important;
+  max-width: 20rem !important;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  body:has([data-print-invoice]) {
+    background: #ffffff;
+    color: #0f172a;
+  }
+
+  body:has([data-print-invoice]) > div aside,
+  body:has([data-print-invoice]) header,
+  body:has([data-print-invoice]) nav {
+    display: none !important;
+  }
+
+  body:has([data-print-invoice]) main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  [data-print-invoice] [data-slot="card"] {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  [data-print-hide] {
+    display: none !important;
+  }
+}

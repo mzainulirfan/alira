@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { verifySession } from "@/lib/auth/dal";
+import { requireRole } from "@/lib/auth/dal";
 import { getAppSettings } from "@/lib/data/settings";
 import { normalizeQuickActionKeys } from "@/lib/quick-actions";
 import { SubPageHeader } from "@/components/layout/sub-page-header";
 import { QuickActionsForm } from "./quick-actions-form";
+import { ADMIN_ROLES } from "@/lib/staff";
 
 export const metadata: Metadata = {
   title: "Quick Action",
 };
 
 export default async function QuickActionsPage() {
-  await verifySession();
+  await requireRole(ADMIN_ROLES);
   const settings = await getAppSettings();
 
   return (

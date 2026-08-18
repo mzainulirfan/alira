@@ -1,9 +1,10 @@
 import "server-only";
 
 import { cache } from "react";
-import { verifySession } from "@/lib/auth/dal";
+import { assertRole, verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import type { Customer, CustomerInput } from "@/lib/types";
+import { ADMIN_ROLES, METER_ROLES } from "@/lib/staff";
 
 export const CUSTOMER_PREFIX = "PAM";
 
@@ -52,7 +53,7 @@ export const getCustomerById = cache(async (id: string) => {
 });
 
 export async function createCustomer(input: CustomerInput): Promise<Customer> {
-  await verifySession();
+  await assertRole(METER_ROLES);
   const supabase = createSupabaseAdmin();
   const customerNumber = await getNextCustomerNumber(supabase);
 
@@ -65,7 +66,7 @@ export async function createCustomer(input: CustomerInput): Promise<Customer> {
       address: input.address ?? null,
       meter_number: input.meter_number ?? null,
       join_date: input.join_date ?? null,
-      status: input.status ?? "active",
+      status: "active",
     })
     .select()
     .single();
@@ -78,7 +79,7 @@ export async function updateCustomer(
   id: string,
   input: CustomerInput
 ): Promise<Customer> {
-  await verifySession();
+  await assertRole(METER_ROLES);
   const supabase = createSupabaseAdmin();
 
   const { data, error } = await supabase
@@ -89,7 +90,6 @@ export async function updateCustomer(
       address: input.address ?? null,
       meter_number: input.meter_number ?? null,
       join_date: input.join_date ?? null,
-      status: input.status ?? "active",
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -104,7 +104,7 @@ export async function setCustomerStatus(
   id: string,
   status: "active" | "inactive"
 ): Promise<void> {
-  await verifySession();
+  await assertRole(ADMIN_ROLES);
   const supabase = createSupabaseAdmin();
 
   const { error } = await supabase

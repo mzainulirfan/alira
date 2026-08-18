@@ -17,7 +17,7 @@ import { updatePasscodeAction, type SettingsFormState } from "@/app/actions/sett
 
 const noState: SettingsFormState = {};
 
-export function SecurityForm() {
+export function SecurityForm({ required = false }: { required?: boolean }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState(updatePasscodeAction, noState);
 
@@ -34,7 +34,11 @@ export function SecurityForm() {
     <form ref={formRef} action={formAction} className="flex flex-col gap-4">
       <SubPageHeader
         title="Keamanan"
-        description="Ganti passcode 6 digit untuk masuk aplikasi."
+         description={
+           required
+             ? "Ganti passcode sementara sebelum melanjutkan ke aplikasi."
+             : "Ganti passcode 6 digit untuk masuk aplikasi."
+         }
         action={
           <Button type="submit" disabled={pending}>
             {pending ? "Menyimpan..." : "Simpan"}

@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 import { loginAction, type LoginState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,7 @@ const DIGIT_COUNT = 6;
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, initialState);
+  const [username, setUsername] = useState("");
   const [digits, setDigits] = useState<string[]>(() => Array(DIGIT_COUNT).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [lastState, setLastState] = useState(state);
@@ -74,8 +76,25 @@ export function LoginForm() {
     <form action={action} className="flex w-full flex-col gap-4">
       <input type="hidden" name="passcode" value={digits.join("")} />
 
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="username">Username</Label>
+        <Input
+          id="username"
+          name="username"
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          className="h-10"
+          disabled={pending}
+          autoFocus
+          required
+        />
+      </div>
+
       <div className="flex flex-col gap-2">
-        <Label htmlFor="passcode">Passcode</Label>
+        <Label id="passcode-label" htmlFor="passcode">Passcode</Label>
         <div
           role="group"
           aria-labelledby="passcode-label"
@@ -97,7 +116,6 @@ export function LoginForm() {
               onChange={(e) => handleChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
               onPaste={handlePaste}
-              autoFocus={i === 0}
               aria-label={`Digit ${i + 1}`}
               aria-invalid={hasError}
               aria-describedby={hasError ? "login-error" : undefined}

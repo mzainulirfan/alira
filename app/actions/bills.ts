@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { verifySession } from "@/lib/auth/dal";
+import { assertRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { periodToDate } from "@/lib/data/bills";
 import type { AppSettings } from "@/lib/types";
+import { FINANCE_ROLES } from "@/lib/staff";
 
 export type GenerateBillsState = {
   error?: string;
@@ -17,7 +18,7 @@ export async function generateBillsAction(
   _prev: GenerateBillsState | undefined,
   formData: FormData
 ): Promise<GenerateBillsState> {
-  await verifySession();
+  await assertRole(FINANCE_ROLES);
 
   const period = formData.get("period");
   if (typeof period !== "string" || !/^\d{4}-\d{2}$/.test(period)) {

@@ -21,12 +21,15 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  ConfirmationDialogHeader,
+  ConfirmationDialogSummary,
+} from "@/components/ui/confirmation-dialog";
 import {
   saveTariffAction,
   setTariffActiveAction,
@@ -388,12 +391,12 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Perubahan belum disimpan</DialogTitle>
-            <DialogDescription>
-              Ada data yang belum tersimpan. Yakin ingin menutup form ini?
-            </DialogDescription>
-          </DialogHeader>
+           <ConfirmationDialogHeader
+             icon={Edit01Icon}
+             tone="warning"
+             title="Perubahan belum disimpan"
+             description="Jika ditutup sekarang, perubahan tarif akan hilang."
+           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               Lanjut Mengisi
@@ -449,13 +452,19 @@ function ToggleTariff({
       </Button>
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Jadikan tarif ini aktif?</DialogTitle>
-            <DialogDescription>
-              Tarif aktif saat ini akan dinonaktifkan dan digantikan oleh &quot;
-              {tariff.name}&quot;.
-            </DialogDescription>
-          </DialogHeader>
+           <ConfirmationDialogHeader
+             icon={PowerIcon}
+             tone="success"
+             title="Jadikan tarif ini aktif?"
+             description="Tarif aktif saat ini akan dinonaktifkan dan digantikan dengan tarif berikut."
+           />
+           <ConfirmationDialogSummary>
+             <p className="font-medium">{tariff.name}</p>
+             <p className="mt-1 text-xs text-muted-foreground">
+               {formatCurrency(tariff.price_per_m3)}/m³ · Abonemen{" "}
+               {formatCurrency(tariff.monthly_fee)}
+             </p>
+           </ConfirmationDialogSummary>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               Batal
@@ -499,12 +508,19 @@ function DeleteTariff({ tariff }: { tariff: Tariff }) {
       </Button>
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Hapus tarif &quot;{tariff.name}&quot;?</DialogTitle>
-            <DialogDescription>
-              Tarif tidak dapat dikembalikan setelah dihapus.
-            </DialogDescription>
-          </DialogHeader>
+           <ConfirmationDialogHeader
+             icon={Delete01Icon}
+             tone="destructive"
+             title="Hapus tarif?"
+             description="Tarif tidak dapat dikembalikan setelah dihapus."
+           />
+           <ConfirmationDialogSummary>
+             <p className="font-medium">{tariff.name}</p>
+             <p className="mt-1 text-xs text-muted-foreground">
+               {formatCurrency(tariff.price_per_m3)}/m³ · Abonemen{" "}
+               {formatCurrency(tariff.monthly_fee)}
+             </p>
+           </ConfirmationDialogSummary>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               Batal

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { verifySession } from "@/lib/auth/dal";
 import { getCustomers } from "@/lib/data/customers";
 import { CustomersClient } from "@/components/customers/customers-client";
+import { canManageCustomers } from "@/lib/staff";
 
 export const metadata: Metadata = {
   title: "Pelanggan",
@@ -12,7 +13,7 @@ export default async function CustomersPage({
 }: {
   searchParams: Promise<{ q?: string; status?: string }>;
 }) {
-  await verifySession();
+  const session = await verifySession();
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q : "";
   const status = typeof params.status === "string" ? params.status : "all";
@@ -39,6 +40,7 @@ export default async function CustomersPage({
       activeTotal={customers.filter((c) => c.status === "active").length}
       query={query}
       status={status}
+      canEdit={canManageCustomers(session.role)}
     />
   );
 }

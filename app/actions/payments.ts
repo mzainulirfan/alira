@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { verifySession } from "@/lib/auth/dal";
+import { assertRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { FINANCE_ROLES } from "@/lib/staff";
 
 export type RecordPaymentState = {
   error?: string;
@@ -13,7 +14,7 @@ export async function recordPaymentAction(
   _prev: RecordPaymentState | undefined,
   formData: FormData
 ): Promise<RecordPaymentState> {
-  await verifySession();
+  const session = await assertRole(FINANCE_ROLES);
 
   const billId = formData.get("bill_id");
   const amountRaw = formData.get("amount");
@@ -42,8 +43,13 @@ export async function recordPaymentAction(
 
   if (billError) return { error: billError.message };
   if (!bill) return { error: "Tagihan tidak ditemukan." };
-  if (bill.status === "paid") {
-    return { error: "Tagihan ini sudah lunas." };
+  if (bill.status !== "unpaid" && bill.status !== "overdue") {
+    return { error: "Tagihan ini tidak dapat dibayar." };
+  }
+  if (Math.abs(amount - Number(bill.total_amount)) > 0.01) {
+    return {
+      error: "Nominal pembayaran harus sama dengan total tagihan.",
+    };
   }
 
   const existing = await supabase
@@ -55,14 +61,19 @@ export async function recordPaymentAction(
     return { error: "Pembayaran untuk tagihan ini sudah tercatat." };
   }
 
-  const { error: payError } = await supabase.from("pam_payments").insert({
-    bill_id: billId,
-    customer_id: bill.customer_id,
-    amount,
-    payment_method: method,
-    payment_date: paymentDate || undefined,
-    notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
-  });
+  const { data: payment, error: payError } = await supabase
+    .from("pam_payments")
+    .insert({
+      bill_id: billId,
+      customer_id: bill.customer_id,
+      amount,
+      payment_method: method,
+      payment_date: paymentDate || undefined,
+      received_by: session.userId,
+      notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
+    })
+    .select("id")
+    .single();
 
   if (payError) return { error: `Gagal menyimpan pembayaran: ${payError.message}` };
 
@@ -72,6 +83,9 @@ export async function recordPaymentAction(
     .eq("id", billId);
 
   if (updateError) {
+    if (payment?.id) {
+      await supabase.from("pam_payments").delete().eq("id", payment.id);
+    }
     return { error: `Gagal memperbarui status tagihan: ${updateError.message}` };
   }
 

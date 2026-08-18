@@ -26,7 +26,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { ConfirmationDialogHeader } from "@/components/ui/confirmation-dialog";
 import {
   createCustomerAction,
   updateCustomerAction,
@@ -331,34 +331,6 @@ export function CustomerForm({
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label>Status</Label>
-              <div className="grid grid-cols-2 gap-1 rounded-lg border border-input bg-background p-1">
-                {(["active", "inactive"] as const).map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => update("status", value)}
-                    className={cn(
-                      "flex h-7 cursor-pointer items-center justify-center gap-1.5 rounded-md text-sm transition-colors",
-                      values.status === value
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="status"
-                      value={value}
-                      checked={values.status === value}
-                      readOnly
-                      className="sr-only"
-                    />
-                    {value === "active" ? "Aktif" : "Nonaktif"}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           <DialogFooter className="pt-2">
@@ -374,12 +346,12 @@ export function CustomerForm({
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Perubahan belum disimpan</DialogTitle>
-            <DialogDescription>
-              Ada data yang belum tersimpan. Yakin ingin menutup form ini?
-            </DialogDescription>
-          </DialogHeader>
+           <ConfirmationDialogHeader
+             icon={Edit01Icon}
+             tone="warning"
+             title="Perubahan belum disimpan"
+             description="Jika ditutup sekarang, perubahan yang Anda buat akan hilang."
+           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               Lanjut Mengisi

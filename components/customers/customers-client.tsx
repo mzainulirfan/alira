@@ -28,12 +28,14 @@ export function CustomersClient({
   activeTotal,
   query,
   status,
+  canEdit,
 }: {
   customers: Customer[];
   total: number;
   activeTotal: number;
   query: string;
   status: string;
+  canEdit: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -73,6 +75,13 @@ export function CustomersClient({
     inputRef.current?.focus();
   }
 
+  function resetFilters() {
+    setSearch("");
+    router.push("/customers");
+  }
+
+  const hasActiveFilters = query !== "" || status !== "all";
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -82,57 +91,58 @@ export function CustomersClient({
             {activeTotal} aktif dari {total} pelanggan
           </p>
         </div>
-        <CustomerForm />
+        {canEdit && <CustomerForm />}
       </div>
 
-      <div className="relative">
-        <HugeiconsIcon
-          icon={Search01Icon}
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-        />
-        <input
-          ref={inputRef}
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Cari nama, nomor pelanggan, nomor meter..."
-          className="h-10 w-full rounded-lg border border-input bg-transparent pr-9 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={clearSearch}
-            aria-label="Bersihkan pencarian"
-            className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-          </button>
-        )}
-      </div>
-
-      <div className="flex gap-2 overflow-x-auto">
-        {STATUS_TABS.map((tab) => (
-          <Button
-            key={tab.key}
-            variant={status === tab.key ? "default" : "outline"}
-            size="sm"
-            onClick={() => updateParams({ status: tab.key })}
-          >
-            {tab.label}
-            <span className="text-xs opacity-70">
-              {counts[tab.key as keyof typeof counts]}
-            </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-48 flex-1">
+          <HugeiconsIcon
+            icon={Search01Icon}
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <input
+            ref={inputRef}
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari nama, nomor pelanggan, atau meter..."
+            className="h-8 w-full rounded-lg border border-border bg-card pr-9 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              aria-label="Bersihkan pencarian"
+              className="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+            </button>
+          )}
+        </div>
+        <select
+          value={status}
+          onChange={(event) => updateParams({ status: event.target.value })}
+          aria-label="Filter status pelanggan"
+          className="h-8 min-w-0 flex-1 rounded-lg border border-border bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:max-w-52"
+        >
+          {STATUS_TABS.map((tab) => (
+            <option key={tab.key} value={tab.key}>
+              {tab.label} ({counts[tab.key as keyof typeof counts]})
+            </option>
+          ))}
+        </select>
+        {hasActiveFilters && (
+          <Button variant="outline" size="sm" onClick={resetFilters}>
+            Reset Filter
           </Button>
-        ))}
+        )}
       </div>
 
       {customers.length === 0 ? (
         <EmptyState
-          hasFilter={query !== "" || status !== "all"}
-          onClearFilters={() => {
-            setSearch("");
-            updateParams({ q: "", status: "all" });
-          }}
+          hasFilter={hasActiveFilters}
+          onClearFilters={resetFilters}
+          canEdit={canEdit}
         />
       ) : (
         <div className="flex flex-col gap-2">
@@ -175,9 +185,11 @@ export function CustomersClient({
 function EmptyState({
   hasFilter,
   onClearFilters,
+  canEdit,
 }: {
   hasFilter: boolean;
   onClearFilters: () => void;
+  canEdit: boolean;
 }) {
   return (
     <Card>
@@ -199,9 +211,9 @@ function EmptyState({
           <Button variant="outline" onClick={onClearFilters}>
             Hapus Filter
           </Button>
-        ) : (
+        ) : canEdit ? (
           <CustomerForm />
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );

@@ -1,10 +1,22 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, type ReactElement } from "react";
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactElement,
+} from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Camera01Icon, CheckmarkCircle01Icon } from "@hugeicons/core-free-icons";
+import {
+  Camera01Icon,
+  CheckmarkCircle01Icon,
+  Delete01Icon,
+  Edit01Icon,
+} from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -19,6 +31,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  ConfirmationDialogHeader,
+  ConfirmationDialogSummary,
+} from "@/components/ui/confirmation-dialog";
+import {
+  cancelReadingAction,
+  type CancelReadingState,
   saveReadingAction,
   type SaveReadingState,
 } from "@/app/actions/meter-readings";
@@ -26,6 +44,7 @@ import { formatCurrency, formatMeter } from "@/lib/format";
 import type { Customer, MeterReading, Tariff } from "@/lib/types";
 
 const initialState: SaveReadingState = {};
+const initialCancelState: CancelReadingState = {};
 
 export function ReadingForm({
   customer,
@@ -47,6 +66,10 @@ export function ReadingForm({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [revisionReason, setRevisionReason] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
   const [current, setCurrent] = useState(
     reading ? String(reading.current_reading) : ""
   );
@@ -56,11 +79,18 @@ export function ReadingForm({
   const [photoName, setPhotoName] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
+  const submitterRef = useRef<HTMLButtonElement | null>(null);
+  const confirmedSubmitRef = useRef(false);
   const [state, formAction, pending] = useActionState(
     saveReadingAction,
     initialState
   );
   const [lastState, setLastState] = useState(state);
+  const [cancelState, cancelAction, cancelPending] = useActionState(
+    cancelReadingAction,
+    initialCancelState
+  );
+  const [lastCancelState, setLastCancelState] = useState(cancelState);
 
   const currentNum = Number(current);
   const usage =
@@ -83,11 +113,20 @@ export function ReadingForm({
       setOpen(false);
     }
   }
+  if (cancelState !== lastCancelState) {
+    setLastCancelState(cancelState);
+    if (cancelState?.success) {
+      setCancelOpen(false);
+      setOpen(false);
+    }
+  }
 
   useEffect(() => {
     if (state?.success) {
       toast.success(
-        `Pencatatan tersimpan. Pemakaian ${formatMeter(state.usage ?? 0)}.`
+        state.billUpdated
+          ? `Pencatatan dan tagihan diperbarui. Pemakaian ${formatMeter(state.usage ?? 0)}.`
+          : `Pencatatan tersimpan. Pemakaian ${formatMeter(state.usage ?? 0)}.`
       );
       router.refresh();
       if (state.next && nextCustomerId) {
@@ -101,6 +140,19 @@ export function ReadingForm({
   }, [state, router, nextCustomerId]);
 
   useEffect(() => {
+    if (cancelState?.success) {
+      toast.success(
+        cancelState.billDeleted
+          ? "Pencatatan dan tagihan belum dibayar dibatalkan."
+          : "Pencatatan dibatalkan."
+      );
+      router.refresh();
+    } else if (cancelState?.error) {
+      toast.error(cancelState.error);
+    }
+  }, [cancelState, router]);
+
+  useEffect(() => {
     function handleOpenReading(e: Event) {
       const detail = (e as CustomEvent).detail;
       if (detail === customer.id) {
@@ -108,6 +160,7 @@ export function ReadingForm({
         setCurrent(resetValue);
         setOriginal(resetValue);
         setPhotoName(null);
+        setRevisionReason("");
         if (photoRef.current) photoRef.current.value = "";
         setConfirmOpen(false);
         setOpen(true);
@@ -129,6 +182,7 @@ export function ReadingForm({
   function discardChanges() {
     setCurrent(original);
     setPhotoName(null);
+    setRevisionReason("");
     if (photoRef.current) photoRef.current.value = "";
     setConfirmOpen(false);
     setOpen(false);
@@ -140,12 +194,30 @@ export function ReadingForm({
       setCurrent(resetValue);
       setOriginal(resetValue);
       setPhotoName(null);
+      setRevisionReason("");
       if (photoRef.current) photoRef.current.value = "";
       setConfirmOpen(false);
       setOpen(true);
     } else {
       closeForm();
     }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (confirmedSubmitRef.current) {
+      confirmedSubmitRef.current = false;
+      return;
+    }
+    event.preventDefault();
+    submitterRef.current = (event.nativeEvent as SubmitEvent)
+      .submitter as HTMLButtonElement | null;
+    setSaveConfirmOpen(true);
+  }
+
+  function confirmSave() {
+    confirmedSubmitRef.current = true;
+    setSaveConfirmOpen(false);
+    formRef.current?.requestSubmit(submitterRef.current ?? undefined);
   }
 
   return (
@@ -171,8 +243,14 @@ export function ReadingForm({
           </DialogDescription>
         </DialogHeader>
 
-        <form ref={formRef} action={formAction} className="flex flex-col gap-4">
+        <form
+          ref={formRef}
+          action={formAction}
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-4"
+        >
           <input type="hidden" name="customer_id" value={customer.id} />
+          {reading && <input type="hidden" name="reading_id" value={reading.id} />}
           <input type="hidden" name="period" value={period} />
           <input type="hidden" name="previous_reading" value={previousReading} />
 
@@ -275,12 +353,55 @@ export function ReadingForm({
             )}
           </div>
 
+          {reading && (
+            <div className="flex flex-col gap-1.5 border-t pt-4">
+              <Label htmlFor={`revision_reason_${reading.id}`}>
+                Alasan Revisi
+              </Label>
+              <textarea
+                id={`revision_reason_${reading.id}`}
+                name="revision_reason"
+                value={revisionReason}
+                onChange={(event) => setRevisionReason(event.target.value)}
+                rows={2}
+                minLength={3}
+                placeholder="Contoh: angka tercatat pada pelanggan yang salah"
+                className="min-h-16 w-full resize-y rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Revisi akan dicatat bersama identitas petugas dan waktunya.
+              </p>
+            </div>
+          )}
+
           <DialogFooter className="gap-2 pt-2">
+            {reading && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  setCancelReason("");
+                  setCancelOpen(true);
+                }}
+              >
+                <HugeiconsIcon icon={Delete01Icon} />
+                Batalkan Pencatatan
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={closeForm}>
               Batal
             </Button>
             {reading ? (
-              <Button type="submit" disabled={pending || usage === null}>
+              <Button
+                type="submit"
+                disabled={
+                  pending ||
+                  usage === null ||
+                  !dirty ||
+                  revisionReason.trim().length < 3
+                }
+              >
                 {pending
                   ? "Menyimpan..."
                   : "Simpan Perubahan"}
@@ -304,14 +425,124 @@ export function ReadingForm({
         </form>
       </DialogContent>
 
+      <Dialog open={saveConfirmOpen} onOpenChange={setSaveConfirmOpen}>
+        <DialogContent className="sm:max-w-sm">
+           <ConfirmationDialogHeader
+             icon={CheckmarkCircle01Icon}
+             title={
+               reading ? "Konfirmasi Revisi Meter" : "Konfirmasi Pencatatan Meter"
+             }
+             description="Pastikan pelanggan dan angka meter berikut sudah benar."
+           />
+           <ConfirmationDialogSummary>
+            <div className="border-b pb-3">
+              <p className="font-semibold">{customer.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {customer.customer_number} ·{" "}
+                {customer.meter_number
+                  ? `Meter ${customer.meter_number}`
+                  : "Tanpa nomor meter"}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Periode</p>
+                <p className="font-medium">{period}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Meter sekarang</p>
+                <p className="font-medium">{formatMeter(currentNum)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Pemakaian</p>
+                <p className="font-medium">{formatMeter(usage ?? 0)}</p>
+              </div>
+              {reading && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Meter sebelumnya</p>
+                  <p className="font-medium">
+                    {formatMeter(reading.current_reading)}
+                  </p>
+                </div>
+              )}
+            </div>
+            {reading && (
+              <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">
+                Alasan: {revisionReason.trim()}
+              </p>
+            )}
+           </ConfirmationDialogSummary>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveConfirmOpen(false)}>
+              Periksa Lagi
+            </Button>
+            <Button onClick={confirmSave} disabled={pending || usage === null}>
+              {pending ? "Menyimpan..." : reading ? "Simpan Revisi" : "Simpan Pencatatan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {reading && (
+        <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <DialogContent className="sm:max-w-sm">
+             <ConfirmationDialogHeader
+               icon={Delete01Icon}
+               tone="destructive"
+               title="Batalkan Pencatatan?"
+               description={`${customer.name} akan kembali ke status Belum Dicatat. Tagihan yang belum dibayar juga akan dibatalkan.`}
+             />
+            <form action={cancelAction} className="flex flex-col gap-3">
+              <input type="hidden" name="reading_id" value={reading.id} />
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor={`cancel_reason_${reading.id}`}>
+                  Alasan Pembatalan
+                </Label>
+                <textarea
+                  id={`cancel_reason_${reading.id}`}
+                  name="reason"
+                  value={cancelReason}
+                  onChange={(event) => setCancelReason(event.target.value)}
+                  rows={3}
+                  minLength={3}
+                  placeholder="Contoh: meter pelanggan lain yang tercatat"
+                  className="min-h-20 w-full resize-y rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  required
+                />
+              </div>
+              {cancelState?.error && (
+                <p className="text-xs text-destructive">{cancelState.error}</p>
+              )}
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={cancelPending}
+                  onClick={() => setCancelOpen(false)}
+                >
+                  Kembali
+                </Button>
+                <Button
+                  type="submit"
+                  variant="destructive"
+                  disabled={cancelPending || cancelReason.trim().length < 3}
+                >
+                  {cancelPending ? "Membatalkan..." : "Batalkan Pencatatan"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Perubahan belum disimpan</DialogTitle>
-            <DialogDescription>
-              Ada data yang belum tersimpan. Yakin ingin menutup form ini?
-            </DialogDescription>
-          </DialogHeader>
+           <ConfirmationDialogHeader
+             icon={Edit01Icon}
+             tone="warning"
+             title="Perubahan belum disimpan"
+             description="Jika ditutup sekarang, perubahan pencatatan meter akan hilang."
+           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               Lanjut Mengisi

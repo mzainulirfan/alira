@@ -5,8 +5,9 @@ import {
   UserGroupIcon,
   Tap01Icon,
   BanknoteIcon,
+  BanknoteArrowUpIcon,
+  InvoiceIcon,
   UserAdd01Icon,
-  CheckmarkCircle02Icon,
   ArrowRight01Icon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 export type ActivityItem = {
   id: string;
-  type: "payment" | "reading" | "customer";
+  type: "payment" | "reading" | "customer" | "expense";
   title: string;
   description: string;
   time: string;
@@ -35,18 +36,23 @@ type DashboardSummaryProps = {
   activeCustomers: number;
   totalCustomers: number;
   readingDone: number;
-  billedTotal: number;
-  paidTotal: number;
+  billPaidCount: number;
+  billTotal: number;
+  cashIn: number;
+  cashOut: number;
+  canViewFinance: boolean;
   unpaidCount: number;
   overdueCount: number;
   activities: ActivityItem[];
   quickActionKeys: QuickActionKey[];
+  hasActiveFilters: boolean;
 };
 
 const activityIcons: Record<ActivityItem["type"], IconSvgElement> = {
   payment: BanknoteIcon,
   reading: Tap01Icon,
   customer: UserAdd01Icon,
+  expense: BanknoteArrowUpIcon,
 };
 
 export function DashboardSummary({
@@ -54,20 +60,23 @@ export function DashboardSummary({
   activeCustomers,
   totalCustomers,
   readingDone,
-  billedTotal,
-  paidTotal,
+  billPaidCount,
+  billTotal,
+  cashIn,
+  cashOut,
+  canViewFinance,
   unpaidCount,
   overdueCount,
   activities,
   quickActionKeys,
+  hasActiveFilters,
 }: DashboardSummaryProps) {
   const readingTotal = activeCustomers;
   const readingPct =
     readingTotal > 0 ? Math.round((readingDone / readingTotal) * 100) : 0;
   const readingRemaining = Math.max(0, readingTotal - readingDone);
-
-  const paidPct = billedTotal > 0 ? Math.round((paidTotal / billedTotal) * 100) : 0;
-  const unpaidAmount = Math.max(0, billedTotal - paidTotal);
+  const billRemaining = Math.max(0, billTotal - billPaidCount);
+  const netCash = cashIn - cashOut;
 
   const attentionItems: {
     label: string;
@@ -107,7 +116,14 @@ export function DashboardSummary({
           <h1 className="text-xl font-semibold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">{formatShortPeriod(period)}</p>
         </div>
-        <PeriodPicker period={period} />
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <PeriodPicker period={period} />
+          {hasActiveFilters && (
+            <Button variant="outline" size="sm" render={<Link href="/dashboard" />}>
+              Reset Filter
+            </Button>
+          )}
+        </div>
       </div>
 
       <div
@@ -130,151 +146,88 @@ export function DashboardSummary({
         ))}
       </div>
 
-      <section className="flex flex-col gap-2">
-        <SectionLabel>Ringkasan</SectionLabel>
-        <div className="grid grid-cols-2 gap-3">
-          <SummaryCard
-            href="/customers"
-            icon={UserGroupIcon}
-            label="Pelanggan"
-            value={formatNumber(activeCustomers)}
-            sub={`dari ${formatNumber(totalCustomers)} total`}
-          />
-          <SummaryCard
-            href="/meter-readings"
-            icon={Tap01Icon}
-            label="Meter"
-            value={`${formatNumber(readingDone)} / ${formatNumber(readingTotal)}`}
-            sub={`${readingPct}% selesai`}
-          />
-        </div>
-      </section>
+      <div className="grid grid-cols-3 gap-2">
+        <DashboardStat
+          href="/customers"
+          icon={UserGroupIcon}
+          label="Pelanggan"
+          value={formatNumber(activeCustomers)}
+          sub={`${formatNumber(totalCustomers)} total`}
+        />
+        <DashboardStat
+          href="/meter-readings"
+          icon={Tap01Icon}
+          label="Meter"
+          value={`${formatNumber(readingDone)}/${formatNumber(readingTotal)}`}
+          sub={`${readingPct}% selesai`}
+        />
+        <DashboardStat
+          href="/bills"
+          icon={InvoiceIcon}
+          label="Tagihan"
+          value={`${formatNumber(billPaidCount)}/${formatNumber(billTotal)}`}
+          sub={`${formatNumber(billRemaining)} belum lunas`}
+        />
+      </div>
 
-      <section className="flex flex-col gap-2">
-        <SectionLabel>Pencatatan Meter</SectionLabel>
-        <Card>
-          <CardContent className="flex flex-col gap-3 py-4">
-            {readingTotal === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Belum ada pelanggan aktif untuk dicatat.
-              </p>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">
-                    {formatNumber(readingDone)}
-                  </span>{" "}
-                  dari {formatNumber(readingTotal)} pelanggan
-                </p>
-                <Progress value={readingPct} />
-                <p className="text-sm">
-                  {readingRemaining > 0 ? (
-                    <>
-                      <span className="font-semibold text-warning">
-                        {formatNumber(readingRemaining)}
-                      </span>{" "}
-                      pelanggan belum dicatat
-                    </>
-                  ) : (
-                    "Semua pelanggan sudah dicatat"
-                  )}
-                </p>
-                <Button render={<Link href="/meter-readings" />} className="w-fit">
-                  Lanjut Catat Meter
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <SectionLabel>Keuangan Bulan Ini</SectionLabel>
-        <Card>
-          <CardContent className="flex flex-col gap-3 py-4">
-            {billedTotal === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Belum ada tagihan untuk {formatShortPeriod(period)}.
-              </p>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <MoneyCard label="Tagihan" value={formatCurrency(billedTotal)} />
-                  <MoneyCard label="Dibayar" value={formatCurrency(paidTotal)} />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">{paidPct}%</span>{" "}
-                  tagihan sudah dibayar
-                </p>
-                <Progress value={paidPct} />
-                <p className="text-sm">
-                  {unpaidAmount > 0 ? (
-                    <>
-                      Belum dibayar{" "}
-                      <span className="font-semibold text-warning">
-                        {formatCurrency(unpaidAmount)}
-                      </span>
-                    </>
-                  ) : (
-                    "Semua tagihan sudah dibayar"
-                  )}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <SectionLabel>Perlu Perhatian</SectionLabel>
-        {attentionItems.length === 0 ? (
+      {attentionItems.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold">Perlu Tindakan</h2>
           <Card>
-            <CardContent className="flex flex-col items-center gap-2 py-6 text-center">
-              <div className="flex size-10 items-center justify-center rounded-full bg-success/10 text-success">
-                <HugeiconsIcon icon={CheckmarkCircle02Icon} size={20} />
-              </div>
-              <p className="font-medium">Semua aman</p>
-              <p className="text-sm text-muted-foreground">
-                Tidak ada pelanggan yang memerlukan perhatian.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardContent className="flex flex-col gap-2 py-3">
+            <CardContent className="flex flex-col gap-1 py-2">
               {attentionItems.map((item) => (
                 <AttentionRow key={item.label} {...item} />
               ))}
             </CardContent>
           </Card>
-        )}
-      </section>
+        </section>
+      )}
 
-      <section className="flex flex-col gap-2">
-        <SectionLabel>Aktivitas Terbaru</SectionLabel>
+      {canViewFinance && <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-semibold">Arus Kas</h2>
         <Card>
-          <CardContent className="flex flex-col gap-1 py-2">
-            {activities.length === 0 ? (
-              <p className="px-3 py-4 text-center text-sm text-muted-foreground">
-                Belum ada aktivitas.
-              </p>
-            ) : (
-              activities.map((a) => (
-                <ActivityRow key={a.id} activity={a} />
-              ))
-            )}
+          <CardContent className="flex flex-col gap-2 py-3">
+            <CashRow label="Pemasukan" value={formatCurrency(cashIn)} />
+            <CashRow label="Pengeluaran" value={formatCurrency(cashOut)} />
+            <div className="flex items-center justify-between gap-3 border-t pt-2">
+              <span className="text-sm font-medium">Saldo Bersih</span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "font-semibold",
+                    netCash < 0 && "text-destructive"
+                  )}
+                >
+                  {formatCurrency(netCash)}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  title="Buka laporan"
+                  render={<Link href={`/reports?period=${period}`} />}
+                >
+                  <HugeiconsIcon icon={ArrowRight01Icon} />
+                  <span className="sr-only">Buka laporan</span>
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      </section>
-    </div>
-  );
-}
+      </section>}
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-      {children}
-    </h2>
+      {activities.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold">Aktivitas Terbaru</h2>
+          <Card>
+            <CardContent className="flex flex-col gap-1 py-2">
+              {activities.map((activity) => (
+                <ActivityRow key={activity.id} activity={activity} />
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -298,7 +251,7 @@ function QuickAction({
   );
 }
 
-function SummaryCard({
+function DashboardStat({
   href,
   icon,
   label,
@@ -314,37 +267,23 @@ function SummaryCard({
   return (
     <Link
       href={href}
-      className="flex flex-col gap-1 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted"
+      className="flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted"
     >
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <HugeiconsIcon icon={icon} className="size-4 text-primary" />
-        <span>{label}</span>
+        <span className="truncate">{label}</span>
       </div>
-      <p className="text-2xl font-medium">{value}</p>
-      <p className="text-xs text-muted-foreground">{sub}</p>
+      <p className="truncate text-lg font-semibold sm:text-xl">{value}</p>
+      <p className="truncate text-[11px] text-muted-foreground sm:text-xs">{sub}</p>
     </Link>
   );
 }
 
-function MoneyCard({ label, value }: { label: string; value: string }) {
+function CashRow({ label, value }: { label: string; value: string }) {
   return (
-    <Card size="sm">
-      <CardContent className="flex flex-col gap-1 py-3">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        <span className="text-lg font-medium">{value}</span>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Progress({ value }: { value: number }) {
-  const clamped = Math.min(100, Math.max(0, value));
-  return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-      <div
-        className="h-full rounded-full bg-primary transition-all"
-        style={{ width: `${clamped}%` }}
-      />
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium">{value}</span>
     </div>
   );
 }

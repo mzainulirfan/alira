@@ -1,10 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { verifySession } from "@/lib/auth/dal";
+import { assertRole, verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { hashPasscode } from "@/lib/auth/passcode";
 import { isQuickActionKey, type QuickActionKey } from "@/lib/quick-actions";
+import { ADMIN_ROLES } from "@/lib/staff";
 import type { AppSettings } from "@/lib/types";
 
 export type SettingsFormState = {
@@ -16,7 +17,7 @@ export async function updateProfileAction(
   _prev: SettingsFormState | undefined,
   formData: FormData
 ): Promise<SettingsFormState> {
-  await verifySession();
+  await assertRole(ADMIN_ROLES);
 
   const pamName = formData.get("pam_name");
   const address = formData.get("address");
@@ -60,7 +61,7 @@ export async function updateQuickActionsAction(
   _prev: SettingsFormState | undefined,
   formData: FormData
 ): Promise<SettingsFormState> {
-  await verifySession();
+  await assertRole(ADMIN_ROLES);
 
   const raw = formData.get("quick_actions");
   if (typeof raw !== "string") {
@@ -117,7 +118,7 @@ export async function updatePasscodeAction(
   _prev: SettingsFormState | undefined,
   formData: FormData
 ): Promise<SettingsFormState> {
-  await verifySession();
+  const session = await verifySession();
 
   const current = formData.get("current_passcode");
   const next = formData.get("new_passcode");
@@ -139,15 +140,15 @@ export async function updatePasscodeAction(
   }
 
   const supabase = createSupabaseAdmin();
-  const { data: settings } = await supabase
-    .from("pam_app_settings")
+  const { data: profile } = await supabase
+    .from("pam_profiles")
     .select("id, passcode_hash")
-    .limit(1)
+    .eq("id", session.userId)
     .maybeSingle();
 
-  const row = settings as (AppSettings & { passcode_hash: string | null }) | null;
+  const row = profile as { id: string; passcode_hash: string | null } | null;
   if (!row?.id) {
-    return { error: "Pengaturan belum tersedia." };
+    return { error: "Akun tidak ditemukan." };
   }
   if (!row.passcode_hash) {
     return { error: "Passcode belum diatur." };
@@ -161,12 +162,17 @@ export async function updatePasscodeAction(
 
   const hash = await hashPasscode(next);
   const { error } = await supabase
-    .from("pam_app_settings")
-    .update({ passcode_hash: hash, updated_at: new Date().toISOString() })
+    .from("pam_profiles")
+    .update({
+      passcode_hash: hash,
+      must_change_passcode: false,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", row.id);
 
   if (error) return { error: `Gagal mengganti passcode: ${error.message}` };
 
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
@@ -176,7 +182,7 @@ export async function saveTariffAction(
   _prev: TariffFormState | undefined,
   formData: FormData
 ): Promise<TariffFormState> {
-  await verifySession();
+  await assertRole(ADMIN_ROLES);
 
   const id = formData.get("id");
   const name = formData.get("name");
@@ -230,7 +236,7 @@ export async function saveTariffAction(
 export async function setTariffActiveAction(
   formData: FormData
 ): Promise<void> {
-  await verifySession();
+  await assertRole(ADMIN_ROLES);
 
   const id = formData.get("id");
   const active = formData.get("is_active") === "true";
@@ -246,7 +252,7 @@ export async function setTariffActiveAction(
 }
 
 export async function deleteTariffAction(formData: FormData): Promise<void> {
-  await verifySession();
+  await assertRole(ADMIN_ROLES);
 
   const id = formData.get("id");
   if (typeof id !== "string" || !id) return;

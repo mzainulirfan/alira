@@ -1,4 +1,5 @@
 import type { IconSvgElement } from "@hugeicons/react";
+import type { StaffRole } from "@/lib/types";
 import {
   BanknoteArrowUpIcon,
   BanknoteIcon,
@@ -120,4 +121,22 @@ export function normalizeQuickActionKeys(value: unknown): QuickActionKey[] {
   }
 
   return normalized.length > 0 ? normalized : DEFAULT_QUICK_ACTIONS;
+}
+
+const QUICK_ACTION_ROLES: Record<QuickActionKey, StaffRole[]> = {
+  "meter-readings": ["admin", "meter_reader"],
+  "payment-new": ["admin", "treasurer"],
+  "expense-new": ["admin", "treasurer"],
+  customers: ["admin", "meter_reader"],
+  bills: ["admin", "treasurer", "meter_reader"],
+  payments: ["admin", "treasurer"],
+  reports: ["admin", "treasurer"],
+  tariffs: ["admin"],
+};
+
+export function filterQuickActionKeys(
+  keys: QuickActionKey[],
+  role: StaffRole
+): QuickActionKey[] {
+  return keys.filter((key) => QUICK_ACTION_ROLES[key].includes(role));
 }

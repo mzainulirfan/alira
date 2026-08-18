@@ -18,12 +18,13 @@ import { PeriodPicker } from "@/components/ui/period-picker";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  ConfirmationDialogHeader,
+  ConfirmationDialogSummary,
+} from "@/components/ui/confirmation-dialog";
 import { generateBillsAction, type GenerateBillsState } from "@/app/actions/bills";
 import { formatCurrency, formatMeter, formatShortPeriod } from "@/lib/format";
 import type { BillWithCustomer } from "@/lib/data/bills";
@@ -66,6 +67,8 @@ export function BillsClient({
   customerId,
   tariff,
   readingCount,
+  canManage,
+  hasActiveFilters,
 }: {
   bills: BillWithCustomer[];
   allBills: BillWithCustomer[];
@@ -74,6 +77,8 @@ export function BillsClient({
   customerId: string | null;
   tariff: Tariff | null;
   readingCount: number;
+  canManage: boolean;
+  hasActiveFilters: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -135,26 +140,46 @@ export function BillsClient({
     router.push(`/bills?${sp.toString()}`);
   }
 
+  function resetFilters() {
+    router.push("/bills");
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Tagihan</h1>
+      <h1 className="text-xl font-semibold">Tagihan</h1>
+
+      <div className="flex flex-wrap items-center gap-2">
         <PeriodPicker period={period} basePath="/bills" />
+        <select
+          value={status}
+          onChange={(event) => updateParams({ status: event.target.value })}
+          aria-label="Filter status tagihan"
+          className="h-8 min-w-0 flex-1 rounded-lg border border-border bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:max-w-56"
+        >
+          {STATUS_FILTERS.map((filter) => (
+            <option key={filter.key} value={filter.key}>
+              {filter.label} ({counts[filter.key as keyof typeof counts]})
+            </option>
+          ))}
+        </select>
+        {customerName && (
+          <div className="flex h-8 min-w-0 items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 pr-1 pl-2.5">
+            <p className="truncate text-xs text-muted-foreground">
+              Pelanggan: <span className="font-medium text-foreground">{customerName}</span>
+            </p>
+            <Button variant="ghost" size="xs" onClick={clearCustomerFilter}>
+              Hapus
+            </Button>
+          </div>
+        )}
+        {hasActiveFilters && (
+          <Button variant="outline" size="sm" onClick={resetFilters}>
+            Reset Filter
+          </Button>
+        )}
       </div>
 
-      {customerName && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
-          <p className="text-sm">
-            Filter pelanggan:{" "}
-            <span className="font-medium">{customerName}</span>
-          </p>
-          <Button variant="ghost" size="sm" onClick={clearCustomerFilter}>
-            Hapus Filter
-          </Button>
-        </div>
-      )}
-
-      {!customerId && pendingCount > 0 && (
+      {canManage && !customerId && pendingCount > 0 && (
         <GenerateBillCard
           period={period}
           pendingCount={pendingCount}
@@ -165,25 +190,6 @@ export function BillsClient({
           setConfirmOpen={setConfirmOpen}
         />
       )}
-
-      <div className="flex gap-2 overflow-x-auto">
-        {STATUS_FILTERS.map((f) => {
-          const count = counts[f.key as keyof typeof counts];
-          return (
-            <Button
-              key={f.key}
-              variant={status === f.key ? "default" : "outline"}
-              size="sm"
-              onClick={() => updateParams({ status: f.key })}
-            >
-              {f.label}
-              <span className={count === 0 ? "text-xs opacity-40" : "text-xs opacity-70"}>
-                {count}
-              </span>
-            </Button>
-          );
-        })}
-      </div>
 
       {bills.length === 0 ? (
         <EmptyState
@@ -200,6 +206,7 @@ export function BillsClient({
               key={bill.id}
               bill={bill}
               customerFilter={Boolean(customerId)}
+              canManage={canManage}
             />
           ))}
         </div>
@@ -211,15 +218,22 @@ export function BillsClient({
 function BillCard({
   bill,
   customerFilter,
+  canManage,
 }: {
   bill: BillWithCustomer;
   customerFilter: boolean;
+  canManage: boolean;
 }) {
   const needPayment = bill.status === "unpaid" || bill.status === "overdue";
   const overdue = daysOverdue(bill);
 
   return (
-    <Card>
+    <Card className="relative transition-colors hover:border-primary/30 hover:bg-muted/20 focus-within:border-primary/40">
+      <Link
+        href={`/bills/${bill.id}`}
+        aria-label={`Lihat detail tagihan ${bill.customer.name}`}
+        className="absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      />
       <CardContent className="flex flex-col gap-2 py-3">
         <div className="flex items-center gap-3">
           <div
@@ -246,29 +260,28 @@ function BillCard({
               {overdue !== null ? ` · Lewat ${overdue} hari` : ""}
             </p>
           </div>
-          <span className="shrink-0 text-base font-semibold">
-            {formatCurrency(bill.total_amount)}
-          </span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="text-base font-semibold">
+              {formatCurrency(bill.total_amount)}
+            </span>
+            <HugeiconsIcon
+              icon={ArrowRight01Icon}
+              className="size-4 text-muted-foreground"
+            />
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 border-t pt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link href={`/bills/${bill.id}`} />}
-          >
-            Detail
-            <HugeiconsIcon icon={ArrowRight01Icon} />
-          </Button>
-          {needPayment && (
+        {canManage && needPayment && (
+          <div className="flex justify-end border-t pt-2">
             <Button
               size="sm"
+              className="relative z-20"
               render={<Link href={`/payments/new?bill=${bill.id}`} />}
             >
               Catat Pembayaran
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -380,29 +393,38 @@ function GenerateBillCard({
             {pending ? "Membuat tagihan..." : `Buat ${pendingCount} Tagihan`}
           </DialogTrigger>
           <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Buat {pendingCount} Tagihan?</DialogTitle>
-              <DialogDescription>
-                Tagihan akan dibuat dari pencatatan meter periode{" "}
-                {formatShortPeriod(period)} menggunakan tarif aktif.
-                {tariff && (
-                  <>
-                    <br />
-                    {pendingCount} pelanggan · {formatCurrency(tariff.price_per_m3)}/m³
-                    {tariff.monthly_fee > 0
-                      ? ` · Abonemen ${formatCurrency(tariff.monthly_fee)}`
-                      : ""}
-                  </>
-                )}
-              </DialogDescription>
-            </DialogHeader>
+             <ConfirmationDialogHeader
+               icon={MagicWand01Icon}
+               title={`Buat ${pendingCount} Tagihan?`}
+               description={`Tagihan akan dibuat dari pencatatan meter periode ${formatShortPeriod(period)}.`}
+             />
+             {tariff && (
+               <ConfirmationDialogSummary>
+                 <div className="flex items-center justify-between">
+                   <span className="text-muted-foreground">Pelanggan</span>
+                   <span className="font-medium">{pendingCount}</span>
+                 </div>
+                 <div className="mt-2 flex items-center justify-between">
+                   <span className="text-muted-foreground">Tarif air</span>
+                   <span className="font-medium">
+                     {formatCurrency(tariff.price_per_m3)}/m³
+                   </span>
+                 </div>
+                 <div className="mt-2 flex items-center justify-between">
+                   <span className="text-muted-foreground">Abonemen</span>
+                   <span className="font-medium">
+                     {formatCurrency(tariff.monthly_fee)}
+                   </span>
+                 </div>
+               </ConfirmationDialogSummary>
+             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setConfirmOpen(false)}>
                 Batal
               </Button>
-              <form action={formAction}>
+               <form action={formAction} className="w-full sm:w-auto">
                 <input type="hidden" name="period" value={period} />
-                <Button type="submit" disabled={pending}>
+                 <Button type="submit" disabled={pending} className="w-full">
                   {pending ? "Membuat..." : "Buat Tagihan"}
                 </Button>
               </form>

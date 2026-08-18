@@ -6,14 +6,18 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { bottomNavItems } from "./nav-items";
+import type { StaffRole } from "@/lib/types";
 
-export function BottomNav() {
+export function BottomNav({ role }: { role: StaffRole }) {
   const pathname = usePathname();
+  const visibleItems = bottomNavItems.filter(
+    (item) => !item.roles || item.roles.includes(role)
+  );
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="grid grid-cols-5">
-        {bottomNavItems.map((item) => {
+        {visibleItems.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (

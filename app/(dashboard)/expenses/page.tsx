@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { verifySession } from "@/lib/auth/dal";
+import { requireRole } from "@/lib/auth/dal";
 import { currentPeriod } from "@/lib/data/bills";
 import { getExpenses } from "@/lib/data/expenses";
 import { isExpenseCategory } from "@/lib/expenses";
 import { ExpensesClient } from "@/components/expenses/expenses-client";
+import { FINANCE_ROLES } from "@/lib/staff";
 
 export const metadata: Metadata = {
   title: "Pengeluaran",
@@ -14,7 +15,7 @@ export default async function ExpensesPage({
 }: {
   searchParams: Promise<{ period?: string; category?: string }>;
 }) {
-  await verifySession();
+  await requireRole(FINANCE_ROLES);
   const params = await searchParams;
   const period =
     typeof params.period === "string" && /^\d{4}-\d{2}$/.test(params.period)
@@ -37,6 +38,7 @@ export default async function ExpensesPage({
       period={period}
       category={category}
       totalAmount={totalAmount}
+      hasActiveFilters={period !== currentPeriod() || category !== null}
     />
   );
 }

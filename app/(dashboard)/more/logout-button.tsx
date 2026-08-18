@@ -8,12 +8,10 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ConfirmationDialogHeader } from "@/components/ui/confirmation-dialog";
 
 export function LogoutButton() {
   const [open, setOpen] = useState(false);
@@ -32,18 +30,18 @@ export function LogoutButton() {
         Keluar
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Keluar dari Alira?</DialogTitle>
-          <DialogDescription>
-            Anda perlu memasukkan passcode untuk masuk kembali.
-          </DialogDescription>
-        </DialogHeader>
+         <ConfirmationDialogHeader
+           icon={Logout01Icon}
+           tone="warning"
+           title="Keluar dari Alira?"
+           description="Sesi Anda akan diakhiri dan passcode diperlukan untuk masuk kembali."
+         />
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Batal
           </Button>
-          <form action={logoutAction}>
-            <Button type="submit" variant="destructive">
+           <form action={logoutAction} className="w-full sm:w-auto">
+             <Button type="submit" variant="destructive" className="w-full">
               Keluar
             </Button>
           </form>

@@ -6,6 +6,7 @@ import {
 } from "@/lib/data/meter-readings";
 import { getActiveTariff } from "@/lib/data/bills";
 import { MeterReadingsClient } from "@/components/meter-readings/meter-readings-client";
+import { METER_ROLES } from "@/lib/staff";
 
 export const metadata: Metadata = {
   title: "Pencatatan Meter",
@@ -16,7 +17,7 @@ export default async function MeterReadingsPage({
 }: {
   searchParams: Promise<{ period?: string; q?: string; status?: string }>;
 }) {
-  await verifySession();
+  const session = await verifySession();
   const params = await searchParams;
   const period =
     typeof params.period === "string" && /^\d{4}-\d{2}$/.test(params.period)
@@ -29,7 +30,6 @@ export default async function MeterReadingsPage({
     getActiveTariff(),
   ]);
   const done = rows.filter((r) => r.reading).length;
-  const pending = rows.length - done;
 
   const status =
     typeof params.status === "string" &&
@@ -37,9 +37,7 @@ export default async function MeterReadingsPage({
       params.status === "done" ||
       params.status === "pending")
       ? params.status
-      : pending > 0
-        ? "pending"
-        : "all";
+      : "pending";
 
   const sorted = [...rows].sort((a, b) => {
     const aDone = a.reading ? 1 : 0;
@@ -77,6 +75,12 @@ export default async function MeterReadingsPage({
       query={query}
       status={status}
       pendingCustomers={pendingCustomers}
+      canEdit={METER_ROLES.includes(session.role)}
+      hasActiveFilters={
+        period !== currentPeriod() ||
+        Boolean(params.q) ||
+        typeof params.status === "string"
+      }
     />
   );
 }

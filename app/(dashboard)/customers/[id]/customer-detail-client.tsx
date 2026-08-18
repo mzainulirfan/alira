@@ -51,12 +51,20 @@ export function CustomerDetailClient({
   bills,
   tariff,
   period,
+  canEdit,
+  canChangeStatus,
+  canRecordMeter,
+  canRecordPayment,
 }: {
   customer: Customer;
   readings: MeterReading[];
   bills: Bill[];
   tariff: Tariff | null;
   period: string;
+  canEdit: boolean;
+  canChangeStatus: boolean;
+  canRecordMeter: boolean;
+  canRecordPayment: boolean;
 }) {
   const lastReading = readings[0] ?? null;
   const lastBill = bills[0] ?? null;
@@ -89,7 +97,7 @@ export function CustomerDetailClient({
               <Badge variant={customer.status === "active" ? "success" : "secondary"}>
                 {customer.status === "active" ? "Aktif" : "Nonaktif"}
               </Badge>
-              <CustomerForm mode="edit" customer={customer} />
+              {canEdit && <CustomerForm mode="edit" customer={customer} />}
             </div>
           </div>
 
@@ -115,12 +123,14 @@ export function CustomerDetailClient({
               tariff={tariff}
               lastReading={lastReading}
               unpaidBill={unpaidBill}
+              canRecordMeter={canRecordMeter}
+              canRecordPayment={canRecordPayment}
             />
-            {customer.status === "active" ? (
+            {canChangeStatus && (customer.status === "active" ? (
               <StatusToggle customerId={customer.id} status="inactive" label="Nonaktifkan" />
             ) : (
               <StatusToggle customerId={customer.id} status="active" label="Aktifkan" />
-            )}
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -235,22 +245,26 @@ function QuickActions({
   tariff,
   lastReading,
   unpaidBill,
+  canRecordMeter,
+  canRecordPayment,
 }: {
   customer: Customer;
   period: string;
   tariff: Tariff | null;
   lastReading: MeterReading | null;
   unpaidBill: Bill | null;
+  canRecordMeter: boolean;
+  canRecordPayment: boolean;
 }) {
-  if (customer.status !== "active") {
+  if (customer.status !== "active" || (!canRecordMeter && !canRecordPayment)) {
     return null;
   }
 
   const previousReading = lastReading?.current_reading ?? 0;
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      <ReadingForm
+    <div className="grid gap-2 sm:grid-cols-2">
+      {canRecordMeter && <ReadingForm
         customer={customer}
         period={period}
         previousReading={previousReading}
@@ -261,8 +275,8 @@ function QuickActions({
             Catat Meter
           </Button>
         }
-      />
-      {unpaidBill ? (
+      />}
+      {canRecordPayment && (unpaidBill ? (
         <Button
           variant="outline"
           size="sm"
@@ -276,7 +290,7 @@ function QuickActions({
           <HugeiconsIcon icon={BanknoteIcon} />
           Tidak Ada Tagihan
         </Button>
-      )}
+      ))}
     </div>
   );
 }

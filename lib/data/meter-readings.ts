@@ -3,13 +3,14 @@ import "server-only";
 import { cache } from "react";
 import { verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
-import type { Customer, MeterReading } from "@/lib/types";
+import type { Bill, Customer, MeterReading } from "@/lib/types";
 
 export type ReadingWithCustomer = {
   customer: Customer;
   reading: MeterReading | null;
   previousReading: number;
   previousPeriod: string | null;
+  billStatus: Bill["status"] | null;
 };
 
 export function periodToDate(period: string): string {
@@ -56,19 +57,31 @@ export const getPeriodReadings = cache(
 
 export const getCustomerReadingStatus = cache(
   async (period: string): Promise<ReadingWithCustomer[]> => {
-    const [customers, readings] = await Promise.all([
+    const supabase = createSupabaseAdmin();
+    const [customers, readings, { data: bills, error: billsError }] = await Promise.all([
       getActiveCustomers(),
       getPeriodReadings(period),
+      supabase
+        .from("pam_bills")
+        .select("customer_id, status")
+        .eq("period", periodToDate(period)),
     ]);
+    if (billsError) throw new Error(billsError.message);
 
     const readingsByCustomer = new Map<string, MeterReading>();
     for (const r of readings) readingsByCustomer.set(r.customer_id, r);
+    const billStatusByCustomer = new Map<string, Bill["status"]>();
+    for (const bill of (bills ?? []) as Array<{
+      customer_id: string;
+      status: Bill["status"];
+    }>) {
+      billStatusByCustomer.set(bill.customer_id, bill.status);
+    }
 
     const missing = customers.filter((c) => !readingsByCustomer.has(c.id));
 
     const latestByCustomer = new Map<string, MeterReading>();
     if (missing.length > 0) {
-      const supabase = createSupabaseAdmin();
       const chunk = 200;
       const chunks: string[][] = [];
       for (let i = 0; i < missing.length; i += chunk) {
@@ -103,6 +116,7 @@ export const getCustomerReadingStatus = cache(
           reading,
           previousReading: reading.previous_reading,
           previousPeriod: reading.period.slice(0, 7),
+          billStatus: billStatusByCustomer.get(customer.id) ?? null,
         };
       }
 
@@ -112,6 +126,7 @@ export const getCustomerReadingStatus = cache(
         reading: null,
         previousReading: latest ? latest.current_reading : 0,
         previousPeriod: latest ? dateToPeriod(latest.period) : null,
+        billStatus: null,
       };
     });
   }

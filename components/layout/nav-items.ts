@@ -8,11 +8,13 @@ import {
   Chart01Icon,
   Settings01Icon,
 } from "@hugeicons/core-free-icons";
+import type { StaffRole } from "@/lib/types";
 
 export type NavItem = {
   title: string;
   href: string;
   icon: IconSvgElement;
+  roles?: StaffRole[];
 };
 
 export const navItems: NavItem[] = [
@@ -20,8 +22,18 @@ export const navItems: NavItem[] = [
   { title: "Pelanggan", href: "/customers", icon: UserGroupIcon },
   { title: "Pencatatan Meter", href: "/meter-readings", icon: Tap01Icon },
   { title: "Tagihan", href: "/bills", icon: InvoiceIcon },
-  { title: "Pembayaran", href: "/payments", icon: BanknoteIcon },
-  { title: "Laporan", href: "/reports", icon: Chart01Icon },
+  {
+    title: "Pembayaran",
+    href: "/payments",
+    icon: BanknoteIcon,
+    roles: ["admin", "treasurer"],
+  },
+  {
+    title: "Laporan",
+    href: "/reports",
+    icon: Chart01Icon,
+    roles: ["admin", "treasurer"],
+  },
   { title: "Lainnya", href: "/more", icon: Settings01Icon },
 ];
 

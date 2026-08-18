@@ -3,6 +3,7 @@ import { verifySession } from "@/lib/auth/dal";
 import { currentPeriod, getActiveTariff, getPeriodBills } from "@/lib/data/bills";
 import { getPeriodReadings } from "@/lib/data/meter-readings";
 import { BillsClient } from "@/components/bills/bills-client";
+import { canManageFinance } from "@/lib/staff";
 
 export const metadata: Metadata = {
   title: "Tagihan",
@@ -13,7 +14,7 @@ export default async function BillsPage({
 }: {
   searchParams: Promise<{ period?: string; status?: string; customer?: string }>;
 }) {
-  await verifySession();
+  const session = await verifySession();
   const params = await searchParams;
   const period =
     typeof params.period === "string" && /^\d{4}-\d{2}$/.test(params.period)
@@ -45,6 +46,10 @@ export default async function BillsPage({
       customerId={customerId}
       tariff={tariff}
       readingCount={readings.length}
+      canManage={canManageFinance(session.role)}
+      hasActiveFilters={
+        period !== currentPeriod() || status !== "all" || customerId !== null
+      }
     />
   );
 }

@@ -14,6 +14,14 @@ export default async function proxy(request: NextRequest) {
   );
 
   const hasSession = request.cookies.has("pam_session");
+  const shouldResetSession =
+    isPublicRoute && request.nextUrl.searchParams.get("reset") === "true";
+
+  if (shouldResetSession) {
+    const response = NextResponse.next();
+    response.cookies.delete("pam_session");
+    return response;
+  }
 
   if (isProtectedRoute && !hasSession) {
     const url = new URL("/login", request.url);
@@ -25,7 +33,9 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  return NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", path);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

@@ -6,6 +6,8 @@ import {
   updateCustomer,
   setCustomerStatus,
 } from "@/lib/data/customers";
+import { assertRole } from "@/lib/auth/dal";
+import { ADMIN_ROLES, METER_ROLES } from "@/lib/staff";
 import type { CustomerInput } from "@/lib/types";
 
 export type CustomerFormState = {
@@ -44,6 +46,7 @@ export async function createCustomerAction(
   formData: FormData
 ): Promise<CustomerFormState> {
   try {
+    await assertRole(METER_ROLES);
     const input = parseInput(formData);
     const customer = await createCustomer(input);
     revalidatePath("/customers");
@@ -62,6 +65,7 @@ export async function updateCustomerAction(
     return { error: "ID pelanggan tidak valid." };
   }
   try {
+    await assertRole(METER_ROLES);
     const input = parseInput(formData);
     const customer = await updateCustomer(id, input);
     revalidatePath("/customers");
@@ -75,6 +79,7 @@ export async function updateCustomerAction(
 export async function setCustomerStatusAction(
   formData: FormData
 ): Promise<void> {
+  await assertRole(ADMIN_ROLES);
   const id = formData.get("id");
   const status = formData.get("status");
   if (typeof id !== "string" || !id) return;

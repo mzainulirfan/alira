@@ -78,13 +78,30 @@ export type Expense = {
   updated_at: string;
 };
 
+export type StaffRole = "admin" | "treasurer" | "meter_reader";
+export type StaffStatus = "active" | "inactive";
+
+export type StaffProfile = {
+  id: string;
+  username: string;
+  name: string;
+  role: StaffRole;
+  status: StaffStatus;
+  must_change_passcode: boolean;
+  failed_attempts: number;
+  locked_until: string | null;
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
+  is_locked?: boolean;
+};
+
 export type AppSettings = {
   id: string;
   pam_name: string;
   address: string | null;
   phone: string | null;
   billing_due_day: number;
-  passcode_hash: string | null;
   quick_actions?: QuickActionKey[] | null;
   created_at: string;
   updated_at: string;

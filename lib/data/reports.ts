@@ -1,8 +1,9 @@
 import "server-only";
 
 import { cache } from "react";
-import { verifySession } from "@/lib/auth/dal";
+import { requireRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { FINANCE_ROLES } from "@/lib/staff";
 
 export type ReportSummary = {
   totalCustomers: number;
@@ -38,7 +39,7 @@ function nextPeriodDate(period: string): string {
 
 export const getReport = cache(
   async (period: string): Promise<{ summary: ReportSummary; rows: ReportRow[] }> => {
-    await verifySession();
+    await requireRole(FINANCE_ROLES);
     const supabase = createSupabaseAdmin();
 
     const [

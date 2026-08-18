@@ -4,49 +4,80 @@ import { currentPeriod, periodToDate } from "@/lib/data/meter-readings";
 import { getAppSettings } from "@/lib/data/settings";
 import { DashboardSummary, type ActivityItem } from "@/components/dashboard/dashboard-summary";
 import { formatCurrency, formatMeter } from "@/lib/format";
-import { normalizeQuickActionKeys } from "@/lib/quick-actions";
+import {
+  filterQuickActionKeys,
+  normalizeQuickActionKeys,
+} from "@/lib/quick-actions";
+import { canManageFinance } from "@/lib/staff";
 
 export const metadata = {
   title: "Dashboard",
 };
+
+function nextPeriodDate(period: string): string {
+  const [year, month] = period.split("-").map(Number);
+  return new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
+}
 
 export default async function DashboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ period?: string }>;
 }) {
-  await verifySession();
+  const session = await verifySession();
 
   const sp = await searchParams;
   const period = /^\d{4}-\d{2}$/.test(sp.period ?? "") ? sp.period! : currentPeriod();
   const periodDate = periodToDate(period);
+  const nextPeriod = nextPeriodDate(period);
 
   const supabase = createSupabaseAdmin();
+  const canViewFinance = canManageFinance(session.role);
+  const emptyResult = Promise.resolve({ data: [], error: null });
 
   const [
     settings,
-    { data: customers },
-    { data: readings },
-    { data: bills },
-    { data: recentPayments },
-    { data: recentReadings },
-    { data: recentCustomers },
+    customersResult,
+    readingsResult,
+    billsResult,
+    cashPaymentsResult,
+    expensesResult,
+    recentPaymentsResult,
+    recentReadingsResult,
+    recentCustomersResult,
+    recentExpensesResult,
   ] = await Promise.all([
     getAppSettings(),
     supabase.from("pam_customers").select("id, status"),
     supabase
       .from("pam_meter_readings")
-      .select("id")
+      .select("id, customer_id")
       .eq("period", periodDate),
     supabase
       .from("pam_bills")
       .select("total_amount, status")
       .eq("period", periodDate),
-    supabase
-      .from("pam_payments")
-      .select("id, amount, created_at, bill:pam_bills(customer:pam_customers(id, name))")
-      .order("created_at", { ascending: false })
-      .limit(5),
+    canViewFinance
+      ? supabase
+          .from("pam_payments")
+          .select("amount")
+          .gte("payment_date", periodDate)
+          .lt("payment_date", nextPeriod)
+      : emptyResult,
+    canViewFinance
+      ? supabase
+          .from("pam_expenses")
+          .select("amount")
+          .gte("expense_date", periodDate)
+          .lt("expense_date", nextPeriod)
+      : emptyResult,
+    canViewFinance
+      ? supabase
+          .from("pam_payments")
+          .select("id, amount, created_at, bill:pam_bills(customer:pam_customers(id, name))")
+          .order("created_at", { ascending: false })
+          .limit(5)
+      : emptyResult,
     supabase
       .from("pam_meter_readings")
       .select("id, current_reading, created_at, customer:pam_customers(id, name)")
@@ -57,22 +88,59 @@ export default async function DashboardPage({
       .select("id, name, created_at")
       .order("created_at", { ascending: false })
       .limit(3),
+    canViewFinance
+      ? supabase
+          .from("pam_expenses")
+          .select("id, title, amount, created_at")
+          .order("created_at", { ascending: false })
+          .limit(5)
+      : emptyResult,
   ]);
 
-  const activeCustomers =
-    customers?.filter((c) => c.status === "active").length ?? 0;
-  const totalCustomers = customers?.length ?? 0;
-  const billedTotal =
-    bills?.reduce((s, b) => s + b.total_amount, 0) ?? 0;
-  const paidTotal =
-    bills?.filter((b) => b.status === "paid")
-      .reduce((s, b) => s + b.total_amount, 0) ?? 0;
-  const unpaidCount = bills?.filter((b) => b.status === "unpaid").length ?? 0;
-  const overdueCount = bills?.filter((b) => b.status === "overdue").length ?? 0;
+  const queryResults = [
+    customersResult,
+    readingsResult,
+    billsResult,
+    cashPaymentsResult,
+    expensesResult,
+    recentPaymentsResult,
+    recentReadingsResult,
+    recentCustomersResult,
+    recentExpensesResult,
+  ];
+  const failedQuery = queryResults.find((result) => result.error);
+  if (failedQuery?.error) {
+    throw new Error(`Gagal memuat dashboard: ${failedQuery.error.message}`);
+  }
+
+  const customers = customersResult.data ?? [];
+  const readings = readingsResult.data ?? [];
+  const bills = billsResult.data ?? [];
+  const cashPayments = cashPaymentsResult.data ?? [];
+  const expenses = expensesResult.data ?? [];
+  const recentPayments = recentPaymentsResult.data ?? [];
+  const recentReadings = recentReadingsResult.data ?? [];
+  const recentCustomers = recentCustomersResult.data ?? [];
+  const recentExpenses = recentExpensesResult.data ?? [];
+
+  const activeCustomerIds = new Set(
+    customers.filter((customer) => customer.status === "active").map((customer) => customer.id)
+  );
+  const activeCustomers = activeCustomerIds.size;
+  const totalCustomers = customers.length;
+  const readingDone = readings.filter((reading) =>
+    activeCustomerIds.has(reading.customer_id)
+  ).length;
+  const activeBills = bills.filter((bill) => bill.status !== "cancelled");
+  const billPaidCount = activeBills.filter((bill) => bill.status === "paid").length;
+  const unpaidCount = activeBills.filter((bill) => bill.status === "unpaid").length;
+  const overdueCount = activeBills.filter((bill) => bill.status === "overdue").length;
+  const cashIn = cashPayments.reduce((total, payment) => total + payment.amount, 0);
+  const cashOut = expenses.reduce((total, expense) => total + expense.amount, 0);
 
   const activities: ActivityItem[] = [];
 
-  for (const p of recentPayments ?? []) {
+  for (const p of recentPayments) {
     activities.push({
       id: `pay-${p.id}`,
       type: "payment",
@@ -84,7 +152,7 @@ export default async function DashboardPage({
     });
   }
 
-  for (const r of recentReadings ?? []) {
+  for (const r of recentReadings) {
     activities.push({
       id: `read-${r.id}`,
       type: "reading",
@@ -95,7 +163,7 @@ export default async function DashboardPage({
     });
   }
 
-  for (const c of recentCustomers ?? []) {
+  for (const c of recentCustomers) {
     activities.push({
       id: `cust-${c.id}`,
       type: "customer",
@@ -103,6 +171,17 @@ export default async function DashboardPage({
       description: "Pelanggan baru",
       time: c.created_at,
       href: `/customers/${c.id}`,
+    });
+  }
+
+  for (const expense of recentExpenses) {
+    activities.push({
+      id: `expense-${expense.id}`,
+      type: "expense",
+      title: expense.title,
+      description: `Pengeluaran ${formatCurrency(expense.amount)}`,
+      time: expense.created_at,
+      href: "/expenses",
     });
   }
 
@@ -114,13 +193,20 @@ export default async function DashboardPage({
       period={period}
       activeCustomers={activeCustomers}
       totalCustomers={totalCustomers}
-      readingDone={readings?.length ?? 0}
-      billedTotal={billedTotal}
-      paidTotal={paidTotal}
+      readingDone={readingDone}
+      billPaidCount={billPaidCount}
+      billTotal={activeBills.length}
+      cashIn={cashIn}
+      cashOut={cashOut}
+      canViewFinance={canViewFinance}
       unpaidCount={unpaidCount}
       overdueCount={overdueCount}
       activities={topActivities}
-      quickActionKeys={normalizeQuickActionKeys(settings.quick_actions)}
+      quickActionKeys={filterQuickActionKeys(
+        normalizeQuickActionKeys(settings.quick_actions),
+        session.role
+      )}
+      hasActiveFilters={period !== currentPeriod()}
     />
   );
 }

@@ -20,12 +20,12 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ConfirmationDialogHeader } from "@/components/ui/confirmation-dialog";
 import { EXPENSE_CATEGORIES } from "@/lib/expenses";
 import type { Expense, ExpenseCategory } from "@/lib/types";
 
@@ -406,12 +406,12 @@ export function ExpenseForm({
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Perubahan belum disimpan</DialogTitle>
-            <DialogDescription>
-              Ada data yang belum tersimpan. Yakin ingin menutup form ini?
-            </DialogDescription>
-          </DialogHeader>
+           <ConfirmationDialogHeader
+             icon={Edit01Icon}
+             tone="warning"
+             title="Perubahan belum disimpan"
+             description="Jika ditutup sekarang, perubahan pengeluaran akan hilang."
+           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               Lanjut Mengisi

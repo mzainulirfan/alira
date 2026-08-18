@@ -17,11 +17,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  ConfirmationDialogHeader,
+  ConfirmationDialogSummary,
+} from "@/components/ui/confirmation-dialog";
 import { PeriodPicker } from "@/components/ui/period-picker";
 import {
   EXPENSE_CATEGORIES,
@@ -37,12 +38,14 @@ export function ExpensesClient({
   period,
   category,
   totalAmount,
+  hasActiveFilters,
 }: {
   expenses: Expense[];
   allExpenses: Expense[];
   period: string;
   category: ExpenseCategory | null;
   totalAmount: number;
+  hasActiveFilters: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -78,6 +81,10 @@ export function ExpensesClient({
     const sp = new URLSearchParams(searchParams.toString());
     sp.delete("new");
     replaceParams(sp);
+  }
+
+  function resetFilters() {
+    router.replace(initialOpen ? "/expenses?new=true" : "/expenses");
   }
 
   function downloadCsv() {
@@ -165,12 +172,17 @@ export function ExpensesClient({
             <span className="hidden sm:inline">CSV</span>
           </Button>
         )}
+        {hasActiveFilters && (
+          <Button variant="outline" size="sm" onClick={resetFilters}>
+            Reset Filter
+          </Button>
+        )}
       </div>
 
       {expenses.length === 0 ? (
         <EmptyState
-          hasFilter={category !== null}
-          onClear={() => updateCategory(null)}
+          hasFilter={hasActiveFilters}
+          onClear={resetFilters}
         />
       ) : (
         <div className="flex flex-col gap-2">
@@ -277,13 +289,18 @@ function DeleteExpense({ expense }: { expense: Expense }) {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Hapus pengeluaran?</DialogTitle>
-            <DialogDescription>
-              {expense.title} senilai {formatCurrency(expense.amount)} akan dihapus
-              permanen.
-            </DialogDescription>
-          </DialogHeader>
+           <ConfirmationDialogHeader
+             icon={Delete01Icon}
+             tone="destructive"
+             title="Hapus pengeluaran?"
+             description="Data yang dihapus tidak dapat dikembalikan."
+           />
+           <ConfirmationDialogSummary>
+             <p className="font-medium">{expense.title}</p>
+             <p className="mt-1 text-lg font-semibold text-destructive">
+               {formatCurrency(expense.amount)}
+             </p>
+           </ConfirmationDialogSummary>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
               Batal

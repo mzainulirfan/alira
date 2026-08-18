@@ -13,10 +13,12 @@ export function ReportsClient({
   period,
   summary,
   rows,
+  hasActiveFilters,
 }: {
   period: string;
   summary: ReportSummary;
   rows: ReportRow[];
+  hasActiveFilters: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -67,12 +69,19 @@ export function ReportsClient({
             {formatShortPeriod(period)} · Saldo bersih {formatCurrency(summary.netCash)}
           </p>
         </div>
-        <input
-          type="month"
-          value={period}
-          onChange={(e) => changePeriod(e.target.value)}
-          className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        />
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <input
+            type="month"
+            value={period}
+            onChange={(e) => changePeriod(e.target.value)}
+            className="h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+          {hasActiveFilters && (
+            <Button variant="outline" size="sm" onClick={() => router.push("/reports")}>
+              Reset Filter
+            </Button>
+          )}
+        </div>
       </div>
 
       <Button variant="outline" onClick={downloadCsv}>

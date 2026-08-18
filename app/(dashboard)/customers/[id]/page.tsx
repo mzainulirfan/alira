@@ -5,6 +5,7 @@ import { getCustomerById } from "@/lib/data/customers";
 import { getCustomerDetail } from "@/lib/data/customer-detail";
 import { getActiveTariff, currentPeriod } from "@/lib/data/bills";
 import { CustomerDetailClient } from "./customer-detail-client";
+import { canManageCustomers, canManageFinance } from "@/lib/staff";
 
 export const metadata: Metadata = {
   title: "Detail Pelanggan",
@@ -15,7 +16,7 @@ export default async function CustomerDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await verifySession();
+  const session = await verifySession();
   const { id } = await params;
 
   const [customer, detail, tariff, period] = await Promise.all([
@@ -34,6 +35,10 @@ export default async function CustomerDetailPage({
       bills={detail.bills}
       tariff={tariff}
       period={period}
+      canEdit={canManageCustomers(session.role)}
+      canChangeStatus={session.role === "admin"}
+      canRecordMeter={session.role !== "treasurer"}
+      canRecordPayment={canManageFinance(session.role)}
     />
   );
 }
