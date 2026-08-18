@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Alira
 
-## Getting Started
+Kelola air, meter, dan tagihan dalam satu tempat.
 
-First, run the development server:
+**Stack:** Next.js (App Router) · Tailwind CSS · shadcn/ui · hugeicons · Supabase · PWA
+
+## Setup
+
+### 1. Buat proyek Supabase
+
+Buat proyek di [supabase.com](https://supabase.com), lalu jalankan migrasi schema:
+
+1. Buka **SQL Editor** di dashboard Supabase.
+2. Salin isi `supabase/migrations/0001_init.sql` dan jalankan.
+
+### 2. Konfigurasi environment
+
+```bash
+cp .env.example .env.local
+```
+
+Isi `.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SESSION_SECRET=<hasil dari: openssl rand -base64 32>
+```
+
+- Anon key dan service role key ada di **Settings → API** di dashboard Supabase.
+
+### 3. Set passcode login
+
+```bash
+npm run set-passcode -- 123456
+```
+
+Passcode harus 6 digit angka dan disimpan sebagai hash.
+
+### 4. Jalankan aplikasi
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka `http://localhost:3000`, masuk dengan passcode yang sudah diatur.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Script
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Perintah                | Fungsi                                |
+| ----------------------- | ------------------------------------- |
+| `npm run dev`           | Jalankan server development           |
+| `npm run build`         | Build produksi                        |
+| `npm run lint`          | Jalankan ESLint                       |
+| `npm run icons`         | Generate ulang icon PWA               |
+| `npm run set-passcode`  | Set passcode login (hash)             |
 
-## Learn More
+## Struktur Folder
 
-To learn more about Next.js, take a look at the following resources:
+```text
+app/
+  (auth)/login/        Halaman login passcode
+  (dashboard)/         Layout dashboard + halaman utama
+  actions/             Server actions (auth)
+components/
+  layout/              Sidebar, bottom nav, header
+  dashboard/           Komponen dashboard
+  ui/                  Komponen shadcn/ui
+lib/
+  auth/                Passcode, session (JWT), DAL
+  supabase/            Client browser & server
+  format.ts            Format rupiah, meter, tanggal
+proxy.ts               Proteksi route (auth guard)
+supabase/migrations/   Schema SQL
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Auth
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Login berbasis passcode sederhana (bukan Supabase Auth):
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Passcode di-hash (scrypt-like) dan disimpan di tabel `pam_app_settings.passcode_hash`.
+- Setelah verifikasi, session JWT disimpan di cookie httpOnly.
+- `proxy.ts` melindungi semua route `/dashboard*` dan mengarahkan ke `/login`.
