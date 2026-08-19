@@ -74,6 +74,7 @@ export function CustomerLoginForm() {
   return (
     <form action={action} className="flex w-full flex-col gap-4">
       <input type="hidden" name="customer_number" value={customerNumber} />
+      <input type="hidden" name="passcode" value={digits.join("")} />
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="customer_number">Nomor Pelanggan</Label>
