@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { loginCustomerAction } from "@/app/actions/customer-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ export function CustomerLoginForm() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [lastState, setLastState] = useState(state);
   const hasError = Boolean(state?.error);
+  const router = useRouter();
 
   if (state !== lastState) {
     setLastState(state);
@@ -29,6 +31,12 @@ export function CustomerLoginForm() {
       inputRefs.current[0]?.focus();
     }
   }, [state?.error]);
+
+  useEffect(() => {
+    if (state?.success && state?.redirect) {
+      router.push(state.redirect);
+    }
+  }, [state?.success, state?.redirect, router]);
 
   function handleChange(index: number, value: string) {
     const digit = value.replace(/\D/g, "").slice(-1);

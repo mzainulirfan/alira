@@ -25,7 +25,10 @@ export async function loginCustomerAction(
   const customerNumber = formData.get("customer_number")?.toString().trim().toUpperCase();
   const passcode = formData.get("passcode")?.toString().trim();
 
+  console.log('[DEBUG LOGIN] Received:', { customerNumber, passcodeLength: passcode?.length, passcode });
+
   if (!customerNumber || !passcode) {
+    console.log('[DEBUG LOGIN] Missing fields');
     return { error: "Nomor pelanggan dan passcode wajib diisi." };
   }
   if (!CUSTOMER_NUMBER_REGEX.test(customerNumber)) {
@@ -46,6 +49,8 @@ export async function loginCustomerAction(
     .eq("status", "active")
     .maybeSingle();
 
+  console.log('[DEBUG LOGIN] Customer query result:', { customerError, customer: customer ? { id: customer.id, customer_number: customer.customer_number, hasHash: !!customer.passcode_hash, failed_attempts: customer.failed_attempts, locked_until: customer.locked_until, session_epoch: customer.session_epoch, status: customer.status } : null });
+
   if (customerError) {
     await logLoginAttempt(null, false);
     return { error: "Terjadi kesalahan server. Coba lagi nanti." };
@@ -64,6 +69,9 @@ export async function loginCustomerAction(
   }
 
   // Verifikasi passcode
+  const hashMatch = customer.passcode_hash && await compare(passcode, customer.passcode_hash);
+  console.log('[DEBUG LOGIN] Passcode verify:', { hasHash: !!customer.passcode_hash, passcode, hashMatch });
+
   if (!customer.passcode_hash || !(await compare(passcode, customer.passcode_hash))) {
     const newFailedAttempts = (customer.failed_attempts ?? 0) + 1;
     const updates: Record<string, unknown> = { failed_attempts: newFailedAttempts };
@@ -83,30 +91,40 @@ export async function loginCustomerAction(
     return { error: `Passcode salah. Sisa percobaan: ${MAX_FAILED_ATTEMPTS - newFailedAttempts}.` };
   }
 
-  // Login sukses
-  const newSessionEpoch = crypto.randomUUID();
-  await supabase
-    .from("pam_customers")
-    .update({
-      failed_attempts: 0,
-      locked_until: null,
-      last_login_at: new Date().toISOString(),
-      session_epoch: newSessionEpoch,
-    })
-    .eq("id", customer.id);
+// Login sukses
+  console.log('[DEBUG LOGIN] Login sukses, update session epoch...');
+  try {
+    const newSessionEpoch = crypto.randomUUID();
+    await supabase
+      .from("pam_customers")
+      .update({
+        failed_attempts: 0,
+        locked_until: null,
+        last_login_at: new Date().toISOString(),
+        session_epoch: newSessionEpoch,
+      })
+      .eq("id", customer.id);
 
-  await logLoginAttempt(customer.id, true);
+    console.log('[DEBUG LOGIN] Session epoch updated, logging attempt...');
+    await logLoginAttempt(customer.id, true);
 
-  await createCustomerSession({
-    customerId: customer.id,
-    sessionEpoch: newSessionEpoch,
-  });
+    console.log('[DEBUG LOGIN] Creating customer session...');
+    await createCustomerSession({
+      customerId: customer.id,
+      sessionEpoch: newSessionEpoch,
+    });
 
-  const redirectUrl = customer.must_change_passcode
-    ? "/customer/profile?required=true"
-    : "/customer/dashboard";
+    console.log('[DEBUG LOGIN] Session created, redirecting...');
+    const redirectUrl = customer.must_change_passcode
+      ? "/customer/profile?required=true"
+      : "/customer/dashboard";
 
-  return { success: true, redirect: redirectUrl, mustChangePasscode: customer.must_change_passcode };
+    console.log('[DEBUG LOGIN] Redirect to:', redirectUrl);
+    return { success: true, redirect: redirectUrl, mustChangePasscode: customer.must_change_passcode };
+  } catch (err) {
+    console.error('[DEBUG LOGIN] ERROR in success block:', err);
+    return { error: `Server error: ${err instanceof Error ? err.message : 'Unknown error'}` };
+  }
 }
 
 async function logLoginAttempt(customerId: string | null, success: boolean) {

@@ -7,7 +7,13 @@ ALTER TABLE pam_customers
   ADD COLUMN IF NOT EXISTS must_change_passcode BOOLEAN DEFAULT true,
   ADD COLUMN IF NOT EXISTS failed_attempts INT DEFAULT 0,
   ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ;
+  ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS session_epoch UUID DEFAULT gen_random_uuid();
+
+-- Update existing rows with random session_epoch
+UPDATE pam_customers 
+SET session_epoch = gen_random_uuid() 
+WHERE session_epoch IS NULL;
 
 -- 2. Index untuk login cepat (hanya pelanggan aktif)
 CREATE INDEX IF NOT EXISTS idx_pam_customers_customer_number_active
@@ -33,4 +39,5 @@ COMMENT ON COLUMN pam_customers.must_change_passcode IS 'Force change passcode o
 COMMENT ON COLUMN pam_customers.failed_attempts IS 'Counter for failed login attempts';
 COMMENT ON COLUMN pam_customers.locked_until IS 'Lockout expiry after 5 failed attempts';
 COMMENT ON COLUMN pam_customers.last_login_at IS 'Timestamp of last successful login';
+COMMENT ON COLUMN pam_customers.session_epoch IS 'Session epoch for token invalidation on login/logout/passcode change';
 COMMENT ON TABLE pam_customer_login_logs IS 'Audit log for customer login attempts';
