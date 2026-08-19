@@ -169,7 +169,7 @@ export function BillsClient({
           <Button
             type="button"
             variant="outline"
-            size="icon"
+            size="icon-xl"
             aria-label="Filter status tagihan"
             aria-haspopup="listbox"
             aria-expanded={filterOpen}

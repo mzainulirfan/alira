@@ -170,7 +170,7 @@ export function MeterReadingsClient({
           <Button
             type="button"
             variant="outline"
-            size="icon"
+            size="icon-xl"
             aria-label="Filter status pencatatan meter"
             aria-haspopup="listbox"
             aria-expanded={filterOpen}

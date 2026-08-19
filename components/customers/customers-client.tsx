@@ -178,7 +178,7 @@ export function CustomersClient({
           <Button
             type="button"
             variant="outline"
-            size="icon"
+            size="icon-xl"
             aria-label="Filter status pelanggan"
             aria-haspopup="listbox"
             aria-expanded={filterOpen}

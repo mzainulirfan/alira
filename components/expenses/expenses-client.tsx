@@ -163,7 +163,7 @@ export function ExpensesClient({
           <Button
             type="button"
             variant="outline"
-            size="icon"
+            size="icon-xl"
             aria-label="Filter kategori pengeluaran"
             aria-haspopup="listbox"
             aria-expanded={filterOpen}
