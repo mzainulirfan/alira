@@ -11,6 +11,7 @@ const protectedRoutes = [
   "/more",
 ];
 const publicRoutes = ["/login"];
+const customerLoginRoute = "/customer/login";
 
 function disableCaching(response: NextResponse): NextResponse {
   response.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate");
@@ -28,12 +29,15 @@ export default async function proxy(request: NextRequest) {
   );
 
   const hasSession = request.cookies.has("pam_session");
-  const shouldResetSession =
+  const shouldResetStaffSession =
     isPublicRoute && request.nextUrl.searchParams.get("reset") === "true";
+  const shouldResetCustomerSession =
+    path === customerLoginRoute && request.nextUrl.searchParams.get("reset") === "true";
 
-  if (shouldResetSession) {
+  if (shouldResetStaffSession || shouldResetCustomerSession) {
     const response = NextResponse.next();
-    response.cookies.delete("pam_session");
+    if (shouldResetStaffSession) response.cookies.delete("pam_session");
+    if (shouldResetCustomerSession) response.cookies.delete("customer_session");
     return disableCaching(response);
   }
 

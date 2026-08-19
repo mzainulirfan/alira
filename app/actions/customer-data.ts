@@ -2,21 +2,19 @@
 
 import { unstable_cache } from "next/cache";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
-import { getCurrentCustomerProfile } from "@/lib/auth/customer-dal";
 import type { Bill, MeterReading } from "@/lib/types";
 
 export type DashboardData = {
   activeBill: BillSummary | null;
   latestReading: MeterSummary | null;
-  lastLogin: string | null;
 };
 
 export type BillSummary = {
   id: string;
   period: string;
   total_amount: number;
-  status: "pending" | "paid" | "overdue" | "cancelled";
-  due_date: string;
+  status: "unpaid" | "overdue";
+  due_date: string | null;
 };
 
 export type MeterSummary = {
@@ -35,7 +33,7 @@ async function getDashboardDataForCustomer(customerId: string): Promise<Dashboar
       .from("pam_bills")
       .select("id, period, total_amount, status, due_date")
       .eq("customer_id", customerId)
-      .in("status", ["pending", "overdue"])
+      .in("status", ["unpaid", "overdue"])
       .order("due_date", { ascending: true })
       .limit(1)
       .maybeSingle(),
@@ -48,10 +46,12 @@ async function getDashboardDataForCustomer(customerId: string): Promise<Dashboar
       .maybeSingle(),
   ]);
 
+  const error = billResult.error ?? readingResult.error;
+  if (error) throw new Error(`Gagal memuat dashboard pelanggan: ${error.message}`);
+
   return {
     activeBill: billResult.data ? { ...billResult.data } : null,
     latestReading: readingResult.data ? { ...readingResult.data } : null,
-    lastLogin: null,
   };
 }
 

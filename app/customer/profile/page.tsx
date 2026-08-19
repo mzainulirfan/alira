@@ -11,5 +11,5 @@ export default async function CustomerProfilePage({
   const required = params.required === "true";
 
   if (!profile) return null;
-  return <ProfileContent profile={profile as any} required={required} />;
+  return <ProfileContent profile={profile} required={required} />;
 }

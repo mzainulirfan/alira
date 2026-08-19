@@ -5,14 +5,10 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GaugeIcon,
   FilterIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
   Image01Icon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { formatMeter, formatShortPeriod } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { MeterReading } from "@/lib/types";
 
 interface MeterReadingsTableProps {
@@ -69,10 +65,6 @@ export function MeterReadingsTable({
     setPeriodFilter(nextPeriod);
     setFilterOpen(false);
     await fetchReadings(1);
-  }
-
-  async function handleLoadMore() {
-    await fetchReadings(page + 1);
   }
 
   if (readings.length === 0) {

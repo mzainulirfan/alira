@@ -25,10 +25,7 @@ export async function loginCustomerAction(
   const customerNumber = formData.get("customer_number")?.toString().trim().toUpperCase();
   const passcode = formData.get("passcode")?.toString().trim();
 
-  console.log('[DEBUG LOGIN] Received:', { customerNumber, passcodeLength: passcode?.length, passcode });
-
   if (!customerNumber || !passcode) {
-    console.log('[DEBUG LOGIN] Missing fields');
     return { error: "Nomor pelanggan dan passcode wajib diisi." };
   }
   if (!CUSTOMER_NUMBER_REGEX.test(customerNumber)) {
@@ -49,14 +46,10 @@ export async function loginCustomerAction(
     .eq("status", "active")
     .maybeSingle();
 
-  console.log('[DEBUG LOGIN] Customer query result:', { customerError, customer: customer ? { id: customer.id, customer_number: customer.customer_number, hasHash: !!customer.passcode_hash, failed_attempts: customer.failed_attempts, locked_until: customer.locked_until, session_epoch: customer.session_epoch, status: customer.status } : null });
-
   if (customerError) {
-    await logLoginAttempt(null, false);
     return { error: "Terjadi kesalahan server. Coba lagi nanti." };
   }
   if (!customer) {
-    await logLoginAttempt(null, false);
     return { error: "Nomor pelanggan tidak ditemukan atau tidak aktif." };
   }
 
@@ -69,21 +62,24 @@ export async function loginCustomerAction(
   }
 
   // Verifikasi passcode
-  const hashMatch = customer.passcode_hash && await compare(passcode, customer.passcode_hash);
-  console.log('[DEBUG LOGIN] Passcode verify:', { hasHash: !!customer.passcode_hash, passcode, hashMatch });
-
   if (!customer.passcode_hash || !(await compare(passcode, customer.passcode_hash))) {
     const newFailedAttempts = (customer.failed_attempts ?? 0) + 1;
     const updates: Record<string, unknown> = { failed_attempts: newFailedAttempts };
     if (newFailedAttempts >= MAX_FAILED_ATTEMPTS) {
       updates.locked_until = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60 * 1000).toISOString();
     }
-    await supabase
-      .from("pam_customers")
-      .update(updates)
-      .eq("id", customer.id);
-
-    await logLoginAttempt(customer.id, false);
+    try {
+      const { error: updateError } = await supabase
+        .from("pam_customers")
+        .update(updates)
+        .eq("id", customer.id);
+      if (updateError) {
+        return { error: "Terjadi kesalahan server. Coba lagi nanti." };
+      }
+      await logLoginAttempt(customer.id, false);
+    } catch {
+      return { error: "Terjadi kesalahan server. Coba lagi nanti." };
+    }
 
     if (newFailedAttempts >= MAX_FAILED_ATTEMPTS) {
       return { error: `Passcode salah. Akun terkunci ${LOCKOUT_DURATION_MINUTES} menit.` };
@@ -91,11 +87,9 @@ export async function loginCustomerAction(
     return { error: `Passcode salah. Sisa percobaan: ${MAX_FAILED_ATTEMPTS - newFailedAttempts}.` };
   }
 
-// Login sukses
-  console.log('[DEBUG LOGIN] Login sukses, update session epoch...');
   try {
     const newSessionEpoch = crypto.randomUUID();
-    await supabase
+    const { error: updateError } = await supabase
       .from("pam_customers")
       .update({
         failed_attempts: 0,
@@ -104,38 +98,34 @@ export async function loginCustomerAction(
         session_epoch: newSessionEpoch,
       })
       .eq("id", customer.id);
+    if (updateError) {
+      return { error: "Terjadi kesalahan server. Coba lagi nanti." };
+    }
 
-    console.log('[DEBUG LOGIN] Session epoch updated, logging attempt...');
     await logLoginAttempt(customer.id, true);
 
-    console.log('[DEBUG LOGIN] Creating customer session...');
     await createCustomerSession({
       customerId: customer.id,
       sessionEpoch: newSessionEpoch,
     });
 
-    console.log('[DEBUG LOGIN] Session created, redirecting...');
     const redirectUrl = customer.must_change_passcode
       ? "/customer/profile?required=true"
       : "/customer/dashboard";
 
-    console.log('[DEBUG LOGIN] Redirect to:', redirectUrl);
     return { success: true, redirect: redirectUrl, mustChangePasscode: customer.must_change_passcode };
-  } catch (err) {
-    console.error('[DEBUG LOGIN] ERROR in success block:', err);
-    return { error: `Server error: ${err instanceof Error ? err.message : 'Unknown error'}` };
+  } catch {
+    return { error: "Terjadi kesalahan server. Coba lagi nanti." };
   }
 }
 
-async function logLoginAttempt(customerId: string | null, success: boolean) {
+async function logLoginAttempt(customerId: string, success: boolean) {
   const supabase = createSupabaseAdmin();
-  // IP & user-agent tidak tersedia di Server Action tanpa headers()
-  // Bisa ditambah nanti kalau perlu
-  await supabase.from("pam_customer_login_logs").insert({
+  const { error } = await supabase.from("pam_customer_login_logs").insert({
     customer_id: customerId,
     success,
-    // ip dan user_agent bisa ditambah nanti via headers()
   });
+  if (error) throw new Error("Gagal mencatat aktivitas login.");
 }
 
 export async function logoutCustomerAction() {

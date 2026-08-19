@@ -12,15 +12,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatMeter, formatShortPeriod } from "@/lib/format";
 import Link from "next/link";
-import type { Customer } from "@/lib/types";
+import type { CustomerProfile } from "@/lib/auth/customer-dal";
 
 interface DashboardContentProps {
   activeBill: {
     id: string;
     period: string;
     total_amount: number;
-    status: "pending" | "paid" | "overdue" | "cancelled";
-    due_date: string;
+    status: "unpaid" | "overdue";
+    due_date: string | null;
   } | null;
   latestReading: {
     id: string;
@@ -30,7 +30,7 @@ interface DashboardContentProps {
     usage: number;
   } | null;
   lastLogin: string | null;
-  profile: Customer;
+  profile: CustomerProfile;
 }
 
 export default function DashboardContent({
@@ -44,7 +44,7 @@ export default function DashboardContent({
       <header>
         <h1 className="text-xl font-medium">Dashboard</h1>
         <p className="text-sm text-muted-foreground">
-          Selamat datang, {profile?.name}
+          Selamat datang, {profile.name}
         </p>
       </header>
 
@@ -65,7 +65,7 @@ export default function DashboardContent({
                     </p>
                   </>
                 ) : (
-                  <p className="text-xl font-medium text-success">Tidak ada tagihan tertunggak</p>
+                  <p className="text-xl font-medium text-success">Tidak ada tagihan belum lunas</p>
                 )}
               </div>
             </div>
@@ -76,7 +76,7 @@ export default function DashboardContent({
                 </Badge>
                 <span className="flex items-center gap-1">
                   <HugeiconsIcon icon={Calendar01Icon} size={12} />
-                  Jatuh tempo {formatShortPeriod(activeBill.due_date)}
+                  Jatuh tempo {activeBill.due_date ? formatShortPeriod(activeBill.due_date) : "-"}
                 </span>
               </div>
             )}
@@ -93,9 +93,9 @@ export default function DashboardContent({
                 <p className="text-sm text-muted-foreground">Pemakaian Terakhir</p>
                 {latestReading ? (
                   <>
-                    <p className="text-xl font-medium">{formatMeter(latestReading.current_reading)} m³</p>
+                    <p className="text-xl font-medium">{formatMeter(latestReading.current_reading)}</p>
                     <p className="text-xs text-muted-foreground">
-                      Pemakaian {formatMeter(latestReading.usage)} m³
+                      Pemakaian {formatMeter(latestReading.usage)}
                     </p>
                   </>
                 ) : (
@@ -122,13 +122,13 @@ export default function DashboardContent({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Status Pelanggan</p>
-                <p className="text-xl font-medium capitalize">{profile?.status}</p>
+                <p className="text-xl font-medium capitalize">{profile.status}</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <HugeiconsIcon icon={Calendar01Icon} size={12} />
-                Bergabung {profile?.join_date ? new Date(profile.join_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}
+                Bergabung {profile.join_date ? new Date(profile.join_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}
               </span>
             </div>
           </CardContent>
@@ -152,17 +152,19 @@ export default function DashboardContent({
       </div>
 
       <div className="flex gap-2">
-        <Link href="/customer/bills">
-          <button className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-muted transition-colors">
-            <HugeiconsIcon icon={InvoiceIcon} size={18} />
-            Lihat Semua Tagihan
-          </button>
+        <Link
+          href="/customer/bills"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
+        >
+          <HugeiconsIcon icon={InvoiceIcon} size={18} />
+          Lihat Semua Tagihan
         </Link>
-        <Link href="/customer/meter-readings">
-          <button className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-muted transition-colors">
-            <HugeiconsIcon icon={GaugeIcon} size={18} />
-            Riwayat Meter
-          </button>
+        <Link
+          href="/customer/meter-readings"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
+        >
+          <HugeiconsIcon icon={GaugeIcon} size={18} />
+          Riwayat Meter
         </Link>
       </div>
     </div>

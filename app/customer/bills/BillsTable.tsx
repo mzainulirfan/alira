@@ -86,10 +86,6 @@ export function BillsTable({
     await fetchBills(1);
   }
 
-  async function handleLoadMore() {
-    await fetchBills(page + 1);
-  }
-
   if (bills.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">

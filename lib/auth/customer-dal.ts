@@ -7,10 +7,15 @@ import type { Customer } from "@/lib/types";
 
 export type VerifiedCustomerSession = CustomerSessionPayload & {
   mustChangePasscode: boolean;
-  profile: Customer;
+  profile: CustomerProfile;
 };
 
-export const getCurrentCustomerProfile = async (): Promise<Customer> => {
+export type CustomerProfile = Customer & {
+  must_change_passcode: boolean;
+  last_login_at: string | null;
+};
+
+export const getCurrentCustomerProfile = async (): Promise<CustomerProfile> => {
   const session = await verifyCustomerSession();
   return session.profile;
 };
@@ -25,7 +30,7 @@ export const verifyCustomerSession = async (): Promise<VerifiedCustomerSession> 
   const { data: profile, error } = await supabase
     .from("pam_customers")
     .select(
-      "id, customer_number, name, phone, address, meter_number, join_date, status, must_change_passcode, session_epoch, created_at, updated_at"
+      "id, customer_number, name, phone, address, meter_number, join_date, status, must_change_passcode, session_epoch, last_login_at, created_at, updated_at"
     )
     .eq("id", session.customerId)
     .eq("session_epoch", session.sessionEpoch)
@@ -35,7 +40,7 @@ export const verifyCustomerSession = async (): Promise<VerifiedCustomerSession> 
     redirect("/customer/login?reset=true");
   }
 
-  const customerProfile = profile as Customer;
+  const customerProfile = profile as CustomerProfile;
   return {
     ...session,
     mustChangePasscode: profile.must_change_passcode,
