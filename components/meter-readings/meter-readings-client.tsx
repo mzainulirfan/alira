@@ -342,7 +342,7 @@ export function MeterReadingsClient({
             ) : (
               <Card
                 key={customer.id}
-                className="relative cursor-pointer border-warning/30 transition-colors hover:border-warning/60 hover:bg-warning/5 focus-within:border-warning/60"
+                className="relative cursor-pointer border-info/30 transition-colors hover:border-info/60 hover:bg-info/5 focus-within:border-info/60"
               >
                 {canEdit ? (
                   <ReadingForm
@@ -379,7 +379,7 @@ export function MeterReadingsClient({
                       aria-label={`Lihat detail pelanggan ${customer.name}`}
                       className="relative z-20 flex min-w-0 items-center gap-3 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-warning/15 text-warning">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-info/15 text-info">
                         <HugeiconsIcon icon={GaugeIcon} size={20} />
                       </div>
                       <div className="min-w-0">

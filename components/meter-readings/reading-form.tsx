@@ -364,7 +364,7 @@ export function ReadingForm({
               </p>
             </div>
           ) : tariff === null ? (
-            <p className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+            <p className="rounded-lg border border-info/30 bg-info/10 px-3 py-2 text-xs text-info">
               Belum ada tarif aktif. Atur tarif di Pengaturan agar perkiraan
               tagihan dapat dihitung.
             </p>
@@ -583,7 +583,7 @@ export function ReadingForm({
         <DialogContent className="sm:max-w-sm">
            <ConfirmationDialogHeader
              icon={Edit01Icon}
-             tone="warning"
+             tone="destructive"
              title="Perubahan belum disimpan"
              description="Jika ditutup sekarang, perubahan pencatatan meter akan hilang."
            />
@@ -608,6 +608,6 @@ export function ReadingStatusBadge({ reading }: { reading?: MeterReading | null 
       Sudah Dicatat
     </Badge>
   ) : (
-    <Badge variant="warning">Belum Dicatat</Badge>
+    <Badge variant="secondary">Belum Dicatat</Badge>
   );
 }

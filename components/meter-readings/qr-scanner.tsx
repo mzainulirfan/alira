@@ -386,7 +386,7 @@ export function QrScanner({
             </div>
 
             {cameraError && (
-              <div className="flex flex-col gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-3 text-xs text-warning">
+              <div className="flex flex-col gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-3 text-xs text-destructive">
                 <p>{cameraError}</p>
                 <Button type="button" size="sm" variant="outline" onClick={retryCamera}>
                   <HugeiconsIcon icon={ReloadIcon} />
@@ -504,7 +504,7 @@ export function QrScanner({
             </div>
 
             {isInactive && (
-              <p className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+              <p className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                 Pelanggan nonaktif tidak dapat melakukan pencatatan meter.
               </p>
             )}
