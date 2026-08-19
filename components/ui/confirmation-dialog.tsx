@@ -29,8 +29,8 @@ export function ConfirmationDialogHeader({
   return (
     <div data-confirmation-dialog className="flex items-start gap-3 pr-6">
       <div
-        className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-full",
+        className={        cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-md",
           toneStyles[tone]
         )}
       >
@@ -52,7 +52,7 @@ export function ConfirmationDialogSummary({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-xl border bg-muted/40 p-3 text-sm", className)}>
+    <div className={cn("rounded-md border bg-muted/40 p-3 text-sm", className)}>
       {children}
     </div>
   );

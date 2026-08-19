@@ -30,7 +30,7 @@ export function PaymentsClient({
       {payments.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+            <div className="flex size-12 items-center justify-center rounded-md bg-muted">
               <HugeiconsIcon icon={BanknoteIcon} size={24} className="text-muted-foreground" />
             </div>
             <div>
@@ -47,7 +47,7 @@ export function PaymentsClient({
             <Link key={p.id} href={`/bills/${p.bill_id}`}>
               <Card>
                 <CardContent className="flex items-center gap-3 py-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
                     <HugeiconsIcon icon={BanknoteIcon} size={20} className="text-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">

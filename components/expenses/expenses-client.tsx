@@ -290,7 +290,7 @@ function ExpenseCard({
     <Card>
       <CardContent className="flex flex-col gap-3 py-3">
         <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
             <HugeiconsIcon icon={BanknoteArrowUpIcon} size={20} />
           </div>
           <div className="min-w-0 flex-1">
@@ -411,7 +411,7 @@ function EmptyState({
   return (
     <Card>
       <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-        <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <div className="flex size-12 items-center justify-center rounded-md bg-muted text-muted-foreground">
           <HugeiconsIcon icon={BanknoteArrowUpIcon} size={24} />
         </div>
         <div>

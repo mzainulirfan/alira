@@ -55,7 +55,7 @@ export function CustomerQrDialog({ customer }: { customer: Customer }) {
         <div
           data-print-customer-qr
           data-customer-qr={customer.id}
-          className="flex flex-col items-center rounded-xl border bg-white p-5 text-center text-slate-950"
+          className="flex flex-col items-center rounded-md border bg-white p-5 text-center text-slate-950"
         >
           <QRCodeSVG
             value={payload}

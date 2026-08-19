@@ -450,7 +450,7 @@ export function QrScanner({
 
         {result?.error && (
           <div className="flex flex-col gap-3 text-center">
-            <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-5">
+            <div className="rounded-md border border-destructive/20 bg-destructive/5 px-4 py-5">
               <p className="font-medium">Kode tidak dapat digunakan</p>
               <p className="mt-1 text-sm text-muted-foreground">{result.error}</p>
             </div>
@@ -462,7 +462,7 @@ export function QrScanner({
 
         {customer && (
           <div className="flex flex-col gap-4" aria-live="polite">
-            <div className="rounded-xl border bg-muted/40 p-4">
+            <div className="rounded-md border bg-muted/40 p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 text-success">

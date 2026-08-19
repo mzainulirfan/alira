@@ -260,7 +260,7 @@ export function CustomersClient({
             <Link key={c.id} href={`/customers/${c.id}`}>
               <Card>
                 <CardContent className="flex items-center gap-3 py-3">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
                     <HugeiconsIcon icon={UserGroupIcon} size={20} className="text-muted-foreground" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -316,7 +316,7 @@ function EmptyState({
   return (
     <Card>
       <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+        <div className="flex size-12 items-center justify-center rounded-md bg-muted">
           <HugeiconsIcon icon={UserGroupIcon} size={24} className="text-muted-foreground" />
         </div>
         <div>

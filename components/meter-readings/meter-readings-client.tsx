@@ -269,7 +269,7 @@ export function MeterReadingsClient({
                       <button
                         type="button"
                         aria-label={`Ubah pencatatan meter ${customer.name}`}
-                        className="absolute inset-0 z-10 rounded-xl text-transparent outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                        className="absolute inset-0 z-10 rounded-md text-transparent outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                       />
                     }
                   />
@@ -277,7 +277,7 @@ export function MeterReadingsClient({
                   <Link
                     href={`/customers/${customer.id}`}
                     aria-label={`Lihat detail pelanggan ${customer.name}`}
-                    className="absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                    className="absolute inset-0 z-10 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   />
                 )}
                 <CardContent className="flex flex-col gap-3 py-3">
@@ -287,7 +287,7 @@ export function MeterReadingsClient({
                       aria-label={`Lihat detail pelanggan ${customer.name}`}
                       className="relative z-20 flex min-w-0 items-center gap-3 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
                         <HugeiconsIcon icon={GaugeIcon} size={20} className="text-muted-foreground" />
                       </div>
                       <div className="min-w-0">
@@ -361,7 +361,7 @@ export function MeterReadingsClient({
                       <button
                         type="button"
                         aria-label={`Catat meter ${customer.name}`}
-                        className="absolute inset-0 z-10 rounded-xl text-transparent outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                        className="absolute inset-0 z-10 rounded-md text-transparent outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                       />
                     }
                   />
@@ -369,7 +369,7 @@ export function MeterReadingsClient({
                   <Link
                     href={`/customers/${customer.id}`}
                     aria-label={`Lihat detail pelanggan ${customer.name}`}
-                    className="absolute inset-0 z-10 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                    className="absolute inset-0 z-10 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   />
                 )}
                 <CardContent className="flex flex-col gap-3 py-3">
@@ -379,7 +379,7 @@ export function MeterReadingsClient({
                       aria-label={`Lihat detail pelanggan ${customer.name}`}
                       className="relative z-20 flex min-w-0 items-center gap-3 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-warning/15 text-warning">
                         <HugeiconsIcon icon={GaugeIcon} size={20} />
                       </div>
                       <div className="min-w-0">
@@ -442,7 +442,7 @@ function EmptyState({
     return (
       <Card>
         <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-          <div className="flex size-12 items-center justify-center rounded-full bg-success/15 text-success">
+          <div className="flex size-12 items-center justify-center rounded-md bg-success/15 text-success">
             <HugeiconsIcon icon={CheckmarkCircle01Icon} size={24} />
           </div>
           <div>
@@ -460,7 +460,7 @@ function EmptyState({
   return (
     <Card>
       <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-        <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+        <div className="flex size-12 items-center justify-center rounded-md bg-muted">
           <HugeiconsIcon icon={GaugeIcon} size={24} className="text-muted-foreground" />
         </div>
         <div>

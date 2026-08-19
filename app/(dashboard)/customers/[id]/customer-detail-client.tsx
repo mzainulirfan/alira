@@ -88,7 +88,7 @@ export function CustomerDetailClient({
         <CardContent className="flex flex-col gap-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <div className="flex size-12 items-center justify-center rounded-md bg-muted">
                 <HugeiconsIcon icon={UserGroupIcon} size={24} className="text-muted-foreground" />
               </div>
               <div>

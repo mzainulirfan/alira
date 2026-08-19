@@ -46,7 +46,7 @@ export function PeriodPicker({
         value={period}
         onChange={(e) => changePeriod(e.target.value)}
         aria-label="Pilih periode"
-        className="h-8 w-full appearance-none rounded-lg border border-border bg-card pl-8 pr-8 text-sm font-medium focus:border-ring focus:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="h-11 w-full appearance-none rounded-sm border border-border bg-card pl-8 pr-8 text-sm font-medium focus:border-ring focus:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

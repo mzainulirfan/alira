@@ -110,7 +110,7 @@ export function PaymentForm({
       <Card>
         <CardContent className="flex flex-col gap-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
               <HugeiconsIcon icon={InvoiceIcon} size={21} />
             </div>
             <div className="min-w-0 flex-1">
@@ -125,7 +125,7 @@ export function PaymentForm({
             </Badge>
           </div>
 
-          <div className="rounded-xl bg-primary/5 px-4 py-4 ring-1 ring-primary/15">
+          <div className="rounded-md bg-primary/5 px-4 py-4 ring-1 ring-primary/15">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Total yang Dibayar
             </p>
@@ -189,7 +189,7 @@ export function PaymentForm({
                   return (
                     <label
                       key={method.value}
-                      className={`flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 text-sm transition-colors ${
+                      className={`flex cursor-pointer items-center justify-between rounded-md border px-3 py-3 text-sm transition-colors ${
                         selected
                           ? "border-primary bg-primary/5 text-foreground"
                           : "border-input text-muted-foreground hover:bg-muted/50"

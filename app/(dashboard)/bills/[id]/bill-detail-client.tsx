@@ -98,7 +98,7 @@ export function BillDetailClient({
       <Card>
         <CardContent className="flex flex-col gap-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
               <HugeiconsIcon icon={InvoiceIcon} size={21} />
             </div>
             <div className="min-w-0 flex-1">
@@ -120,7 +120,7 @@ export function BillDetailClient({
             </Button>
           </div>
 
-          <div className="rounded-xl bg-primary/5 px-4 py-5 ring-1 ring-primary/15">
+          <div className="rounded-md bg-primary/5 px-4 py-5 ring-1 ring-primary/15">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Total Tagihan
             </p>

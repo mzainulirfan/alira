@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-dvh flex-col bg-muted/40 px-4 pt-16 md:pt-24">
+    <main className="flex min-h-dvh flex-col bg-background px-4 pt-16 md:pt-24">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+          <div className="flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <HugeiconsIcon icon={DropletIcon} size={26} />
           </div>
           <div className="flex flex-col gap-1">
@@ -23,7 +23,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <section className="mt-8 flex flex-col rounded-[20px] border border-border bg-card p-6">
+        <section className="mt-8 flex flex-col rounded-lg border border-border bg-card p-6">
           <h1 className="text-xl font-semibold text-foreground">Masuk ke Alira</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Masukkan username dan passcode 6 digit.
