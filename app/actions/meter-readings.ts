@@ -9,7 +9,6 @@ import { METER_ROLES } from "@/lib/staff";
 import { parseCustomerQrPayload } from "@/lib/customer-qr";
 import { isValidPeriod, periodToDate } from "@/lib/period";
 import {
-  createSignedUrlMap,
   ensurePrivateBucket,
   removeStorageObjects,
 } from "@/lib/storage";
@@ -91,20 +90,17 @@ export async function resolveMeterScanAction(
   if (error) return { error: error.message };
 
   const reading = readingResult.data as MeterReading | null;
-  const signedUrls = await createSignedUrlMap(
-    supabase,
-    METER_PHOTOS_BUCKET,
-    [reading?.photo_path ?? null]
-  );
 
   return {
     customer: customer as Customer,
-    reading: reading
-      ? { ...reading, photo_url: signedUrls.get(reading.photo_path ?? "") ?? null }
-      : null,
+    reading: reading ?? null,
     previousReading: Number(previousResult.data?.current_reading ?? 0),
     billStatus: (billResult.data?.status as Bill["status"] | undefined) ?? null,
   };
+}
+
+export async function warmMeterScanAction(): Promise<void> {
+  return;
 }
 
 export async function saveReadingAction(

@@ -10,18 +10,20 @@ export function createCustomerQrPayload(customerNumber: string): string {
 }
 
 export function parseCustomerQrPayload(value: string): string | null {
-  const normalized = value.trim().toUpperCase();
+  const trimmed = value.trim();
+  const uppercased = trimmed.toUpperCase();
 
-  if (CUSTOMER_NUMBER_PATTERN.test(normalized)) return normalized;
+  if (CUSTOMER_NUMBER_PATTERN.test(uppercased)) return uppercased;
 
-  const [prefix, version, customerNumber, ...rest] = normalized.split("|");
+  const [prefix, version, customerNumber, ...rest] = trimmed.split("|");
+  const normalizedCustomerNumber = customerNumber?.trim().toUpperCase() ?? "";
   if (
     rest.length > 0 ||
-    prefix !== QR_PREFIX ||
-    version !== QR_VERSION ||
-    !CUSTOMER_NUMBER_PATTERN.test(customerNumber ?? "")
+    prefix?.trim().toUpperCase() !== QR_PREFIX ||
+    version?.trim().toLowerCase() !== QR_VERSION ||
+    !CUSTOMER_NUMBER_PATTERN.test(normalizedCustomerNumber)
   ) {
     return null;
   }
-  return customerNumber;
+  return normalizedCustomerNumber;
 }
