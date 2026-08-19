@@ -1,17 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  InvoiceIcon,
-  GaugeIcon,
-  UserIcon,
-  Calendar01Icon,
+  ArrowRight01Icon,
   Clock01Icon,
+  GaugeIcon,
+  InvoiceIcon,
+  UserIcon,
 } from "@hugeicons/core-free-icons";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatMeter, formatShortPeriod } from "@/lib/format";
-import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { formatCurrency, formatDate, formatMeter, formatShortPeriod } from "@/lib/format";
 import type { CustomerProfile } from "@/lib/auth/customer-dal";
 
 interface DashboardContentProps {
@@ -33,140 +33,279 @@ interface DashboardContentProps {
   profile: CustomerProfile;
 }
 
+type ActivityItem = {
+  id: string;
+  title: string;
+  description: string;
+  time: string;
+  href: string;
+  badge?: string;
+  icon: typeof InvoiceIcon;
+};
+
+function DashboardStat({
+  href,
+  icon,
+  label,
+  value,
+  sub,
+}: {
+  href: string;
+  icon: typeof InvoiceIcon;
+  label: string;
+  value: string;
+  sub: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted"
+    >
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <HugeiconsIcon icon={icon} className="size-4 text-primary" />
+        <span className="truncate">{label}</span>
+      </div>
+      <p className="truncate text-lg font-medium sm:text-xl">{value}</p>
+      <p className="truncate text-[11px] text-muted-foreground sm:text-xs">{sub}</p>
+    </Link>
+  );
+}
+
+function AttentionRow({
+  label,
+  value,
+  href,
+  tone,
+}: {
+  label: string;
+  value: string;
+  href: string;
+  tone: "warning" | "destructive";
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-muted"
+    >
+      <span className="flex items-center gap-2.5 text-sm">
+        <span
+          className={[
+            "size-2 rounded-full",
+            tone === "warning" ? "bg-warning" : "bg-destructive",
+          ].join(" ")}
+        />
+        {label}
+      </span>
+      <span className="flex items-center gap-1 font-medium">
+        {value}
+        <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-muted-foreground" />
+      </span>
+    </Link>
+  );
+}
+
+function ActivityRow({ activity }: { activity: ActivityItem }) {
+  return (
+    <Link
+      href={activity.href}
+      className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted"
+    >
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        <HugeiconsIcon icon={activity.icon} className="size-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{activity.title}</p>
+        <p className="truncate text-xs text-muted-foreground">{activity.description}</p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-0.5">
+        {activity.badge && <Badge variant="success">{activity.badge}</Badge>}
+        <span className="text-xs text-muted-foreground">{formatActivityTime(activity.time)}</span>
+      </div>
+    </Link>
+  );
+}
+
+function formatActivityTime(value: string): string {
+  const date = new Date(value);
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const diffDays = Math.round((startOfDay - startOfDate) / 86400000);
+
+  if (diffDays === 0) {
+    return date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  if (diffDays === 1) return "Kemarin";
+
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+}
+
+function SectionHeading({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <h2 className="text-sm font-medium">{title}</h2>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
 export default function DashboardContent({
   activeBill,
   latestReading,
   lastLogin,
   profile,
 }: DashboardContentProps) {
+  const customerStatus = profile.status === "active" ? "Aktif" : "Nonaktif";
+  const activeBillValue = activeBill ? formatCurrency(activeBill.total_amount) : "Tidak ada";
+  const billSub = activeBill
+    ? `Periode ${formatShortPeriod(activeBill.period)}`
+    : "Tidak ada tagihan aktif";
+  const meterValue = latestReading ? formatMeter(latestReading.current_reading) : "Belum ada";
+  const meterSub = latestReading
+    ? `Pemakaian ${formatMeter(latestReading.usage)}`
+    : "Menunggu pencatatan meter";
+  const profileValue = customerStatus;
+  const profileSub = `No. ${profile.customer_number}`;
+
+  const attentionItems: {
+    label: string;
+    value: string;
+    href: string;
+    tone: "warning" | "destructive";
+  }[] = [];
+
+  if (activeBill) {
+    attentionItems.push({
+      label: "Tagihan aktif",
+      value: activeBill.status === "overdue" ? "Terlambat" : "Belum lunas",
+      href: "/customer/bills",
+      tone: activeBill.status === "overdue" ? "destructive" : "warning",
+    });
+  }
+
+  if (!latestReading) {
+    attentionItems.push({
+      label: "Pencatatan meter",
+      value: "Belum ada",
+      href: "/customer/meter-readings",
+      tone: "warning",
+    });
+  }
+
+  const activities: ActivityItem[] = [
+    {
+      id: "bill",
+      title: activeBill ? `Tagihan ${formatShortPeriod(activeBill.period)}` : "Tagihan aktif",
+      description: activeBill
+        ? `${formatCurrency(activeBill.total_amount)} ${activeBill.status === "overdue" ? "perlu segera dibayar" : "menunggu pembayaran"}`
+        : "Tidak ada tagihan belum lunas",
+      time: activeBill?.due_date ?? profile.created_at,
+      href: "/customer/bills",
+      badge: activeBill ? "Tagihan" : undefined,
+      icon: InvoiceIcon,
+    },
+    {
+      id: "meter",
+      title: latestReading ? `Meter ${formatShortPeriod(latestReading.period)}` : "Pencatatan meter",
+      description: latestReading
+        ? `${formatMeter(latestReading.current_reading)} dengan pemakaian ${formatMeter(latestReading.usage)}`
+        : "Belum ada data meter terbaru",
+      time: latestReading?.period
+        ? `${latestReading.period}-01`
+        : profile.created_at,
+      href: "/customer/meter-readings",
+      badge: latestReading ? "Meter" : undefined,
+      icon: GaugeIcon,
+    },
+    {
+      id: "profile",
+      title: "Status akun",
+      description: `${customerStatus} sejak ${profile.join_date ? formatDate(profile.join_date) : "akun dibuat"}`,
+      time: profile.join_date ?? profile.created_at,
+      href: "/customer/profile",
+      badge: "Profil",
+      icon: UserIcon,
+    },
+    {
+      id: "login",
+      title: "Login terakhir",
+      description: lastLogin ? formatDate(lastLogin) : "Belum pernah login",
+      time: lastLogin ?? profile.created_at,
+      href: "/customer/profile",
+      badge: lastLogin ? "Aktivitas" : undefined,
+      icon: Clock01Icon,
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-4">
-      <header>
-        <h1 className="text-xl font-medium">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Selamat datang, {profile.name}
-        </p>
-      </header>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardContent className="flex flex-col gap-3 py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-                <HugeiconsIcon icon={InvoiceIcon} size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Tagihan Belum Lunas</p>
-                {activeBill ? (
-                  <>
-                    <p className="text-xl font-medium">{formatCurrency(activeBill.total_amount)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Periode {formatShortPeriod(activeBill.period)}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-xl font-medium text-success">Tidak ada tagihan belum lunas</p>
-                )}
-              </div>
-            </div>
-            {activeBill && (
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <Badge variant={activeBill.status === "overdue" ? "destructive" : "secondary"}>
-                  {activeBill.status === "overdue" ? "Terlambat" : "Belum Lunas"}
-                </Badge>
-                <span className="flex items-center gap-1">
-                  <HugeiconsIcon icon={Calendar01Icon} size={12} />
-                  Jatuh tempo {activeBill.due_date ? formatShortPeriod(activeBill.due_date) : "-"}
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex flex-col gap-3 py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-md bg-info/10 text-info">
-                <HugeiconsIcon icon={GaugeIcon} size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Pemakaian Terakhir</p>
-                {latestReading ? (
-                  <>
-                    <p className="text-xl font-medium">{formatMeter(latestReading.current_reading)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Pemakaian {formatMeter(latestReading.usage)}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-xl font-medium text-muted-foreground">Belum ada pencatatan</p>
-                )}
-              </div>
-            </div>
-            {latestReading && (
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <HugeiconsIcon icon={Calendar01Icon} size={12} />
-                  Periode {formatShortPeriod(latestReading.period)}
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex flex-col gap-3 py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-md bg-warning/10 text-warning">
-                <HugeiconsIcon icon={UserIcon} size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Status Pelanggan</p>
-                <p className="text-xl font-medium capitalize">{profile.status}</p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <HugeiconsIcon icon={Calendar01Icon} size={12} />
-                Bergabung {profile.join_date ? new Date(profile.join_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex flex-col gap-3 py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-md bg-success/10 text-success">
-                <HugeiconsIcon icon={Clock01Icon} size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Login Terakhir</p>
-                <p className="text-xl font-medium">
-                  {lastLogin ? new Date(lastLogin).toLocaleString("id-ID") : "Belum pernah"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-medium">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Ringkasan akun pelanggan</p>
+        </div>
       </div>
 
-      <div className="flex gap-2">
-        <Link
+      <div className="grid grid-cols-3 gap-2">
+        <DashboardStat
           href="/customer/bills"
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
-        >
-          <HugeiconsIcon icon={InvoiceIcon} size={18} />
-          Lihat Semua Tagihan
-        </Link>
-        <Link
+          icon={InvoiceIcon}
+          label="Tagihan"
+          value={activeBillValue}
+          sub={billSub}
+        />
+        <DashboardStat
           href="/customer/meter-readings"
-          className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium transition-colors hover:bg-muted"
-        >
-          <HugeiconsIcon icon={GaugeIcon} size={18} />
-          Riwayat Meter
-        </Link>
+          icon={GaugeIcon}
+          label="Meter"
+          value={meterValue}
+          sub={meterSub}
+        />
+        <DashboardStat
+          href="/customer/profile"
+          icon={UserIcon}
+          label="Akun"
+          value={profileValue}
+          sub={profileSub}
+        />
       </div>
+
+      {attentionItems.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <SectionHeading
+            title="Perlu Tindakan"
+            description="Hal yang paling butuh perhatian saat ini"
+          />
+          <Card>
+            <CardContent className="flex flex-col gap-1 py-2">
+              {attentionItems.map((item) => (
+                <AttentionRow key={item.label} {...item} />
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+      <section className="flex flex-col gap-2">
+        <SectionHeading
+          title="Aktivitas Terbaru"
+          description="Jejak ringkas aktivitas akun pelanggan"
+        />
+        <Card>
+          <CardContent className="flex flex-col gap-1 py-2">
+            {activities.map((activity) => (
+              <ActivityRow key={activity.id} activity={activity} />
+            ))}
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

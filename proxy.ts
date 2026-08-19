@@ -11,6 +11,7 @@ const protectedRoutes = [
   "/more",
 ];
 const publicRoutes = ["/login"];
+const customerHomeRoute = "/customer/dashboard";
 const customerLoginRoute = "/customer/login";
 
 function disableCaching(response: NextResponse): NextResponse {
@@ -29,6 +30,7 @@ export default async function proxy(request: NextRequest) {
   );
 
   const hasSession = request.cookies.has("pam_session");
+  const hasCustomerSession = request.cookies.has("customer_session");
   const shouldResetStaffSession =
     isPublicRoute && request.nextUrl.searchParams.get("reset") === "true";
   const shouldResetCustomerSession =
@@ -39,6 +41,10 @@ export default async function proxy(request: NextRequest) {
     if (shouldResetStaffSession) response.cookies.delete("pam_session");
     if (shouldResetCustomerSession) response.cookies.delete("customer_session");
     return disableCaching(response);
+  }
+
+  if (hasCustomerSession && !hasSession && (isProtectedRoute || isPublicRoute)) {
+    return disableCaching(NextResponse.redirect(new URL(customerHomeRoute, request.url)));
   }
 
   if (isProtectedRoute && !hasSession) {

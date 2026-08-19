@@ -4,6 +4,20 @@ import { cookies } from "next/headers";
 import { getCustomerSession } from "@/lib/auth/customer-jwt";
 import type { MeterReading } from "@/lib/types";
 
+function formatPeriodKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}-01`;
+}
+
+function subtractMonths(date: Date, count: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() - count, 1);
+}
+
+function normalizePeriodFilter(period: string): string {
+  return /^\d{4}-\d{2}$/.test(period) ? `${period}-01` : period;
+}
+
 export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("customer_session")?.value;
@@ -34,6 +48,7 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
   const periodFilter = searchParams.get("period");
+  const rangeFilter = searchParams.get("range");
 
   let query = supabase
     .from("pam_meter_readings")
@@ -45,7 +60,13 @@ export async function GET(request: NextRequest) {
     .order("period", { ascending: false });
 
   if (periodFilter) {
-    query = query.eq("period", periodFilter);
+    query = query.eq("period", normalizePeriodFilter(periodFilter));
+  } else if (rangeFilter === "current-month") {
+    query = query.eq("period", formatPeriodKey(new Date()));
+  } else if (rangeFilter === "last-3-months") {
+    const end = new Date();
+    const start = subtractMonths(end, 2);
+    query = query.gte("period", formatPeriodKey(start)).lte("period", formatPeriodKey(end));
   }
 
   const from = (page - 1) * limit;

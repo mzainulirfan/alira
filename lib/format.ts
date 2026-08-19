@@ -16,7 +16,7 @@ export function formatNumber(value: number): string {
 }
 
 export function formatMeter(value: number): string {
-  return `${formatNumber(value)} m³`;
+  return `${formatNumber(value)} m3`;
 }
 
 export function formatDate(date: Date | string): string {

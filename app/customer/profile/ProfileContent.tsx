@@ -7,7 +7,7 @@ import {
   MapPinIcon,
   AiPhoneIcon,
   CalendarIcon,
-  CircleCheckIcon,
+  AiLockIcon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -91,7 +91,7 @@ function PasscodeInput({
   return (
     <div className="space-y-2">
       <Label className="block text-sm font-medium">{label}</Label>
-      <div className="flex gap-2" role="group" aria-label={label}>
+      <div className="grid grid-cols-6 gap-1.5 sm:flex sm:gap-2" role="group" aria-label={label}>
         {Array.from({ length: DIGIT_COUNT }).map((_, i) => (
           <input
             key={i}
@@ -108,7 +108,7 @@ function PasscodeInput({
             onPaste={handlePaste}
             aria-label={`Digit ${i + 1}`}
             disabled={disabled}
-            className="h-12 w-10 min-w-0 rounded-lg border-2 bg-card text-center text-lg font-semibold text-foreground outline-none transition-all focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 hover:border-primary/50 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed border-border"
+            className="h-11 w-full min-w-0 rounded-lg border border-border bg-card text-center text-lg font-semibold text-foreground outline-none transition-all hover:border-primary/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground sm:w-10"
           />
         ))}
       </div>
@@ -144,9 +144,9 @@ export default function ProfileContent({ profile, required }: {
     .toUpperCase();
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <header className="flex items-center gap-4">
-        <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-semibold text-primary-foreground">
+    <div className="mx-auto max-w-2xl space-y-4">
+      <header className="flex items-center gap-3">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground">
           {initials || "P"}
         </div>
         <div className="min-w-0">
@@ -163,9 +163,13 @@ export default function ProfileContent({ profile, required }: {
       </header>
 
       {required && (
-        <p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive" role="alert">
+        <div
+          className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-medium text-destructive"
+          role="alert"
+        >
+          <HugeiconsIcon icon={AiLockIcon} size={16} />
           Ganti passcode sementara sebelum melanjutkan.
-        </p>
+        </div>
       )}
 
       <Card>
@@ -193,43 +197,49 @@ export default function ProfileContent({ profile, required }: {
       </Card>
 
       <Card>
-        <CardHeader className="pb-1">
-          <CardTitle className="text-base">Ganti passcode</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <HugeiconsIcon icon={AiLockIcon} size={18} />
+            Ganti passcode
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="mb-5 text-sm text-muted-foreground">Gunakan 6 digit angka yang mudah Anda ingat, tetapi tidak mudah ditebak.</p>
           <form action={action} className="space-y-5">
+            <p className="text-sm text-muted-foreground">
+              Masukkan passcode lama dan buat passcode baru 6 digit.
+            </p>
             <div className="space-y-4">
-                  <PasscodeInput
-                    digits={oldDigits}
-                    setDigits={setOldDigits}
-                    refs={oldRefs}
-                    prefix="old"
-                    label="Passcode Lama"
-                    disabled={pending}
-                  />
-                  <PasscodeInput
-                    digits={newDigits}
-                    setDigits={setNewDigits}
-                    refs={newRefs}
-                    prefix="new"
-                    label="Passcode Baru"
-                    disabled={pending}
-                  />
-                  <PasscodeInput
-                    digits={confirmDigits}
-                    setDigits={setConfirmDigits}
-                    refs={confirmRefs}
-                    prefix="confirm"
-                    label="Konfirmasi Passcode Baru"
-                    disabled={pending}
-                  />
+              <PasscodeInput
+                digits={oldDigits}
+                setDigits={setOldDigits}
+                refs={oldRefs}
+                prefix="old"
+                label="Passcode lama"
+                disabled={pending}
+              />
+              <PasscodeInput
+                digits={newDigits}
+                setDigits={setNewDigits}
+                refs={newRefs}
+                prefix="new"
+                label="Passcode baru"
+                disabled={pending}
+              />
+              <PasscodeInput
+                digits={confirmDigits}
+                setDigits={setConfirmDigits}
+                refs={confirmRefs}
+                prefix="confirm"
+                label="Konfirmasi passcode baru"
+                disabled={pending}
+              />
             </div>
             <input type="hidden" name="old_passcode" value={oldDigits.join("")} />
             <input type="hidden" name="new_passcode" value={newDigits.join("")} />
             <input type="hidden" name="confirm_passcode" value={confirmDigits.join("")} />
-            <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
-              Simpan passcode
+            <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={pending}>
+              <HugeiconsIcon icon={AiLockIcon} size={17} />
+              {pending ? "Menyimpan..." : "Simpan passcode"}
             </Button>
           </form>
         </CardContent>

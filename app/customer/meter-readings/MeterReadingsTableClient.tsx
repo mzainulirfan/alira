@@ -7,6 +7,7 @@ interface MeterReadingsTableClientProps {
   total: number;
   initialPage: number;
   initialPeriodFilter?: string;
+  initialRangeFilter?: "current-month" | "last-3-months" | "all";
 }
 
 export default function MeterReadingsTableClient({
@@ -14,6 +15,7 @@ export default function MeterReadingsTableClient({
   total,
   initialPage,
   initialPeriodFilter,
+  initialRangeFilter,
 }: MeterReadingsTableClientProps) {
   return (
     <MeterReadingsTable
@@ -21,6 +23,7 @@ export default function MeterReadingsTableClient({
       total={total}
       initialPage={initialPage}
       initialPeriodFilter={initialPeriodFilter}
+      initialRangeFilter={initialRangeFilter}
     />
   );
 }
