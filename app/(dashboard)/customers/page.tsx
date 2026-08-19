@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { verifySession } from "@/lib/auth/dal";
-import { getCustomers } from "@/lib/data/customers";
+import { getCustomerCounts, getCustomersPage } from "@/lib/data/customers";
 import { CustomersClient } from "@/components/customers/customers-client";
 import { canManageCustomers } from "@/lib/staff";
 
@@ -11,33 +11,29 @@ export const metadata: Metadata = {
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; cursor?: string }>;
 }) {
   const session = await verifySession();
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q : "";
-  const status = typeof params.status === "string" ? params.status : "all";
+  const status =
+    typeof params.status === "string" &&
+    (params.status === "active" || params.status === "inactive")
+      ? params.status
+      : "all";
+  const cursor = typeof params.cursor === "string" && params.cursor ? params.cursor : null;
 
-  const customers = await getCustomers();
-
-  const filtered = customers.filter((c) => {
-    const matchesStatus =
-      status === "all" || (status === "active" && c.status === "active") || (status === "inactive" && c.status === "inactive");
-    if (!matchesStatus) return false;
-    if (!query) return true;
-    const q = query.toLowerCase();
-    return (
-      c.name.toLowerCase().includes(q) ||
-      c.customer_number.toLowerCase().includes(q) ||
-      (c.meter_number ?? "").toLowerCase().includes(q)
-    );
-  });
+  const [page, counts] = await Promise.all([
+    getCustomersPage({ query, status, cursor }),
+    getCustomerCounts(),
+  ]);
 
   return (
     <CustomersClient
-      customers={filtered}
-      total={customers.length}
-      activeTotal={customers.filter((c) => c.status === "active").length}
+      customers={page.customers}
+      nextCursor={page.nextCursor}
+      total={counts.total}
+      activeTotal={counts.activeTotal}
       query={query}
       status={status}
       canEdit={canManageCustomers(session.role)}

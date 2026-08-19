@@ -52,7 +52,9 @@ export const getExpenseById = cache(
     const supabase = createSupabaseAdmin();
     const { data, error } = await supabase
       .from("pam_expenses")
-      .select("*")
+      .select(
+        "id, expense_date, title, category, amount, payee, payment_method, receipt_path, receipt_url, notes, created_by, created_at, updated_at"
+      )
       .eq("id", id)
       .maybeSingle();
 

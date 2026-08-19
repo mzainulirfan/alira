@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { assertRole, verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { getImageExtension, hasValidImageSignature } from "@/lib/image-upload";
@@ -231,6 +231,8 @@ export async function saveReadingAction(
       revalidatePath("/dashboard");
       revalidatePath("/reports");
       revalidatePath(`/customers/${customerId}`);
+      revalidateTag("meter-readings", "max");
+      revalidateTag("bills", "max");
       return {
         success: true,
         usage: Number(result?.usage ?? 0),
@@ -256,6 +258,8 @@ export async function saveReadingAction(
     revalidatePath("/dashboard");
     revalidatePath("/reports");
     revalidatePath(`/customers/${customerId}`);
+    revalidateTag("meter-readings", "max");
+    revalidateTag("bills", "max");
     return { success: true, usage: Number(result?.usage ?? 0), next };
   } catch (e) {
     await removeUploadedPhoto();
@@ -296,5 +300,7 @@ export async function cancelReadingAction(
   revalidatePath("/bills");
   revalidatePath("/dashboard");
   revalidatePath("/reports");
+  revalidateTag("meter-readings", "max");
+  revalidateTag("bills", "max");
   return { success: true, billDeleted: result?.bill_deleted === true };
 }

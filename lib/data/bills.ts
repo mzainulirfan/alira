@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { periodToDate } from "@/lib/period";
@@ -18,36 +19,54 @@ export type AdjacentBill = Pick<Bill, "id" | "period">;
 
 export const getActiveTariff = cache(async (): Promise<Tariff | null> => {
   await verifySession();
-  const supabase = createSupabaseAdmin();
-
-  const { data, error } = await supabase
-    .from("pam_tariffs")
-    .select("*")
-    .eq("is_active", true)
-    .order("effective_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw new Error(error.message);
-  return data as Tariff | null;
+  return getCachedActiveTariff();
 });
+
+const getCachedActiveTariff = unstable_cache(
+  async (): Promise<Tariff | null> => {
+    const supabase = createSupabaseAdmin();
+
+    const { data, error } = await supabase
+      .from("pam_tariffs")
+      .select(
+        "id, name, price_per_m3, monthly_fee, effective_date, is_active, created_at"
+      )
+      .eq("is_active", true)
+      .order("effective_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data as Tariff | null;
+  },
+  ["tariff-active"],
+  { tags: ["tariffs"], revalidate: 60 }
+);
 
 export const getPeriodBills = cache(
   async (period: string): Promise<BillWithCustomer[]> => {
     await verifySession();
+    return getCachedPeriodBills(period);
+  }
+);
+
+const getCachedPeriodBills = unstable_cache(
+  async (period: string): Promise<BillWithCustomer[]> => {
     const supabase = createSupabaseAdmin();
 
     const { data, error } = await supabase
       .from("pam_bills")
       .select(
-        "*, customer:pam_customers(id, name, customer_number, meter_number, phone)"
+        "id, customer_id, meter_reading_id, period, usage, price_per_m3, water_amount, monthly_fee, total_amount, due_date, status, created_at, updated_at, customer:pam_customers(id, name, customer_number, meter_number, phone)"
       )
       .eq("period", periodToDate(period))
       .order("customer(customer_number)", { ascending: true });
 
     if (error) throw new Error(error.message);
-    return (data ?? []) as BillWithCustomer[];
-  }
+    return (data ?? []) as unknown as BillWithCustomer[];
+  },
+  ["period-bills"],
+  { tags: ["bills"], revalidate: 60 }
 );
 
 export const getBillById = cache(

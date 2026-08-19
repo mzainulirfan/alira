@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { dateToPeriod, periodToDate } from "@/lib/period";
@@ -17,26 +18,44 @@ export type ReadingWithCustomer = {
 
 export const getActiveCustomers = cache(async (): Promise<Customer[]> => {
   await verifySession();
-  const supabase = createSupabaseAdmin();
-
-  const { data, error } = await supabase
-    .from("pam_customers")
-    .select("*")
-    .eq("status", "active")
-    .order("customer_number", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Customer[];
+  return getCachedActiveCustomers();
 });
+
+const getCachedActiveCustomers = unstable_cache(
+  async (): Promise<Customer[]> => {
+    const supabase = createSupabaseAdmin();
+
+    const { data, error } = await supabase
+      .from("pam_customers")
+      .select(
+        "id, customer_number, name, phone, address, meter_number, join_date, status, created_at, updated_at"
+      )
+      .eq("status", "active")
+      .order("customer_number", { ascending: true });
+
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Customer[];
+  },
+  ["customers-active"],
+  { tags: ["customers"], revalidate: 60 }
+);
 
 export const getPeriodReadings = cache(
   async (period: string): Promise<MeterReading[]> => {
     await verifySession();
+    return getCachedPeriodReadings(period);
+  }
+);
+
+const getCachedPeriodReadings = unstable_cache(
+  async (period: string): Promise<MeterReading[]> => {
     const supabase = createSupabaseAdmin();
 
     const { data, error } = await supabase
       .from("pam_meter_readings")
-      .select("*")
+      .select(
+        "id, customer_id, period, previous_reading, current_reading, usage, photo_path, photo_url, recorded_by, recorded_at, created_at"
+      )
       .eq("period", periodToDate(period));
 
     if (error) throw new Error(error.message);
@@ -59,10 +78,19 @@ export const getPeriodReadings = cache(
       ...reading,
       photo_url: signedUrls.get(reading.photo_path ?? "") ?? null,
     }));
-  }
+  },
+  ["period-readings"],
+  { tags: ["meter-readings"], revalidate: 60 }
 );
 
 export const getCustomerReadingStatus = cache(
+  async (period: string): Promise<ReadingWithCustomer[]> => {
+    await verifySession();
+    return getCachedReadingStatus(period);
+  }
+);
+
+const getCachedReadingStatus = unstable_cache(
   async (period: string): Promise<ReadingWithCustomer[]> => {
     const supabase = createSupabaseAdmin();
     const [customers, readings, { data: bills, error: billsError }] = await Promise.all([
@@ -99,7 +127,9 @@ export const getCustomerReadingStatus = cache(
         chunks.map((ids) =>
           supabase
             .from("pam_meter_readings")
-            .select("*")
+            .select(
+              "id, customer_id, period, previous_reading, current_reading, usage, photo_path, photo_url, recorded_by, recorded_at, created_at"
+            )
             .in("customer_id", ids)
             .lt("period", periodToDate(period))
             .order("period", { ascending: false })
@@ -137,5 +167,7 @@ export const getCustomerReadingStatus = cache(
         billStatus: null,
       };
     });
-  }
+  },
+  ["reading-status"],
+  { tags: ["customers", "meter-readings", "bills"], revalidate: 60 }
 );

@@ -1,14 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import {
   createCustomer,
   updateCustomer,
   setCustomerStatus,
+  getCustomersPage,
 } from "@/lib/data/customers";
-import { assertRole } from "@/lib/auth/dal";
+import { assertRole, verifySession } from "@/lib/auth/dal";
 import { ADMIN_ROLES, METER_ROLES } from "@/lib/staff";
-import type { CustomerInput } from "@/lib/types";
+import type { Customer, CustomerInput } from "@/lib/types";
 
 export type CustomerFormState = {
   error?: string;
@@ -50,6 +51,7 @@ export async function createCustomerAction(
     const input = parseInput(formData);
     const customer = await createCustomer(input);
     revalidatePath("/customers");
+    revalidateTag("customers", "max");
     return { success: true, customerId: customer.id };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal menambahkan pelanggan." };
@@ -70,6 +72,7 @@ export async function updateCustomerAction(
     const customer = await updateCustomer(id, input);
     revalidatePath("/customers");
     revalidatePath(`/customers/${customer.id}`);
+    revalidateTag("customers", "max");
     return { success: true };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal menyimpan perubahan." };
@@ -88,4 +91,18 @@ export async function setCustomerStatusAction(
   await setCustomerStatus(id, status);
   revalidatePath("/customers");
   revalidatePath(`/customers/${id}`);
+  revalidateTag("customers", "max");
+}
+
+export async function loadMoreCustomersAction(input: {
+  query: string;
+  status: string;
+  cursor: string | null;
+}): Promise<{ customers: Customer[]; nextCursor: string | null }> {
+  await verifySession();
+  return getCustomersPage({
+    query: input.query,
+    status: input.status,
+    cursor: input.cursor,
+  });
 }

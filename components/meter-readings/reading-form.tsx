@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ChangeEvent,
   type FormEvent,
   type ReactElement,
 } from "react";
@@ -203,6 +204,51 @@ export function ReadingForm({
     }
   }
 
+  async function compressImage(file: File): Promise<File> {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("Gagal memuat gambar"));
+      };
+      img.src = url;
+    });
+    const MAX_SIZE = 1280;
+    const scale = Math.min(1, MAX_SIZE / Math.max(image.width, image.height));
+    if (scale >= 1) return file;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(image.width * scale);
+    canvas.height = Math.round(image.height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.8)
+    );
+    if (!blob) return file;
+    const baseName = file.name.replace(/\.[^.]+$/, "");
+    return new File([blob], `${baseName}.jpg`, { type: "image/jpeg" });
+  }
+
+  async function handlePhotoChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoName(file.name);
+    try {
+      const compressed = await compressImage(file);
+      const transfer = new DataTransfer();
+      transfer.items.add(compressed);
+      if (photoRef.current) photoRef.current.files = transfer.files;
+    } catch {
+      // gambar gagal dikompres (mis. HEIC) — kirim file asli
+    }
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     if (confirmedSubmitRef.current) {
       confirmedSubmitRef.current = false;
@@ -333,9 +379,7 @@ export function ReadingForm({
               type="file"
               accept="image/*"
               capture="environment"
-              onChange={(e) =>
-                setPhotoName(e.target.files?.[0]?.name ?? null)
-              }
+              onChange={handlePhotoChange}
               className="hidden"
             />
             <Button

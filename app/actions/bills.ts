@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { assertRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { isValidPeriod, periodToDate } from "@/lib/period";
@@ -37,6 +37,7 @@ export async function generateBillsAction(
   revalidatePath("/bills");
   revalidatePath("/dashboard");
   revalidatePath("/reports");
+  revalidateTag("bills", "max");
   return {
     success: true,
     created: Number(result?.created ?? 0),

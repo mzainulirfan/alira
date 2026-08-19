@@ -1,4 +1,5 @@
 import { verifySession } from "@/lib/auth/dal";
+import { unstable_cache } from "next/cache";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { currentPeriod, isValidPeriod, nextPeriodDate, periodToDate } from "@/lib/period";
 import { getAppSettings } from "@/lib/data/settings";
@@ -14,6 +15,108 @@ export const metadata = {
   title: "Dashboard",
 };
 
+const getDashboardData = unstable_cache(
+  async (period: string, canViewFinance: boolean) => {
+    const supabase = createSupabaseAdmin();
+    const periodDate = periodToDate(period);
+    const nextPeriod = nextPeriodDate(period);
+    const emptyResult = Promise.resolve({ data: [], error: null });
+
+    const [
+      customersResult,
+      readingsResult,
+      billsResult,
+      cashPaymentsResult,
+      expensesResult,
+      recentPaymentsResult,
+      recentReadingsResult,
+      recentCustomersResult,
+      recentExpensesResult,
+    ] = await Promise.all([
+      supabase.from("pam_customers").select("id, status"),
+      supabase
+        .from("pam_meter_readings")
+        .select("id, customer_id")
+        .eq("period", periodDate),
+      supabase
+        .from("pam_bills")
+        .select("total_amount, status")
+        .eq("period", periodDate),
+      canViewFinance
+        ? supabase
+            .from("pam_payments")
+            .select("amount")
+            .gte("payment_date", periodDate)
+            .lt("payment_date", nextPeriod)
+        : emptyResult,
+      canViewFinance
+        ? supabase
+            .from("pam_expenses")
+            .select("amount")
+            .gte("expense_date", periodDate)
+            .lt("expense_date", nextPeriod)
+        : emptyResult,
+      canViewFinance
+        ? supabase
+            .from("pam_payments")
+            .select("id, amount, created_at, bill:pam_bills(customer:pam_customers(id, name))")
+            .order("created_at", { ascending: false })
+            .limit(5)
+        : emptyResult,
+      supabase
+        .from("pam_meter_readings")
+        .select("id, current_reading, created_at, customer:pam_customers(id, name)")
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("pam_customers")
+        .select("id, name, created_at")
+        .order("created_at", { ascending: false })
+        .limit(3),
+      canViewFinance
+        ? supabase
+            .from("pam_expenses")
+            .select("id, title, amount, created_at")
+            .order("created_at", { ascending: false })
+            .limit(5)
+        : emptyResult,
+    ]);
+
+    const queryResults = [
+      customersResult,
+      readingsResult,
+      billsResult,
+      cashPaymentsResult,
+      expensesResult,
+      recentPaymentsResult,
+      recentReadingsResult,
+      recentCustomersResult,
+      recentExpensesResult,
+    ];
+    const failedQuery = queryResults.find((result) => result.error);
+    if (failedQuery?.error) {
+      throw new Error(`Gagal memuat dashboard: ${failedQuery.error.message}`);
+    }
+
+    return {
+      customers: customersResult.data ?? [],
+      readings: readingsResult.data ?? [],
+      bills: billsResult.data ?? [],
+      cashPayments: cashPaymentsResult.data ?? [],
+      expenses: expensesResult.data ?? [],
+      recentPayments: recentPaymentsResult.data ?? [],
+      recentReadings: recentReadingsResult.data ?? [],
+      recentCustomers: recentCustomersResult.data ?? [],
+      recentExpenses: recentExpensesResult.data ?? [],
+    };
+  },
+  ["dashboard-summary"],
+  {
+    tags: ["customers", "meter-readings", "bills", "payments", "expenses", "settings"],
+    revalidate: 60,
+  }
+);
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -23,100 +126,25 @@ export default async function DashboardPage({
 
   const sp = await searchParams;
   const period = isValidPeriod(sp.period) ? sp.period : currentPeriod();
-  const periodDate = periodToDate(period);
-  const nextPeriod = nextPeriodDate(period);
 
-  const supabase = createSupabaseAdmin();
   const canViewFinance = canManageFinance(session.role);
-  const emptyResult = Promise.resolve({ data: [], error: null });
 
-  const [
-    settings,
-    customersResult,
-    readingsResult,
-    billsResult,
-    cashPaymentsResult,
-    expensesResult,
-    recentPaymentsResult,
-    recentReadingsResult,
-    recentCustomersResult,
-    recentExpensesResult,
-  ] = await Promise.all([
+  const [settings, dashboard] = await Promise.all([
     getAppSettings(),
-    supabase.from("pam_customers").select("id, status"),
-    supabase
-      .from("pam_meter_readings")
-      .select("id, customer_id")
-      .eq("period", periodDate),
-    supabase
-      .from("pam_bills")
-      .select("total_amount, status")
-      .eq("period", periodDate),
-    canViewFinance
-      ? supabase
-          .from("pam_payments")
-          .select("amount")
-          .gte("payment_date", periodDate)
-          .lt("payment_date", nextPeriod)
-      : emptyResult,
-    canViewFinance
-      ? supabase
-          .from("pam_expenses")
-          .select("amount")
-          .gte("expense_date", periodDate)
-          .lt("expense_date", nextPeriod)
-      : emptyResult,
-    canViewFinance
-      ? supabase
-          .from("pam_payments")
-          .select("id, amount, created_at, bill:pam_bills(customer:pam_customers(id, name))")
-          .order("created_at", { ascending: false })
-          .limit(5)
-      : emptyResult,
-    supabase
-      .from("pam_meter_readings")
-      .select("id, current_reading, created_at, customer:pam_customers(id, name)")
-      .order("created_at", { ascending: false })
-      .limit(5),
-    supabase
-      .from("pam_customers")
-      .select("id, name, created_at")
-      .order("created_at", { ascending: false })
-      .limit(3),
-    canViewFinance
-      ? supabase
-          .from("pam_expenses")
-          .select("id, title, amount, created_at")
-          .order("created_at", { ascending: false })
-          .limit(5)
-      : emptyResult,
+    getDashboardData(period, canViewFinance),
   ]);
 
-  const queryResults = [
-    customersResult,
-    readingsResult,
-    billsResult,
-    cashPaymentsResult,
-    expensesResult,
-    recentPaymentsResult,
-    recentReadingsResult,
-    recentCustomersResult,
-    recentExpensesResult,
-  ];
-  const failedQuery = queryResults.find((result) => result.error);
-  if (failedQuery?.error) {
-    throw new Error(`Gagal memuat dashboard: ${failedQuery.error.message}`);
-  }
-
-  const customers = customersResult.data ?? [];
-  const readings = readingsResult.data ?? [];
-  const bills = billsResult.data ?? [];
-  const cashPayments = cashPaymentsResult.data ?? [];
-  const expenses = expensesResult.data ?? [];
-  const recentPayments = recentPaymentsResult.data ?? [];
-  const recentReadings = recentReadingsResult.data ?? [];
-  const recentCustomers = recentCustomersResult.data ?? [];
-  const recentExpenses = recentExpensesResult.data ?? [];
+  const {
+    customers,
+    readings,
+    bills,
+    cashPayments,
+    expenses,
+    recentPayments,
+    recentReadings,
+    recentCustomers,
+    recentExpenses,
+  } = dashboard;
 
   const activeCustomerIds = new Set(
     customers.filter((customer) => customer.status === "active").map((customer) => customer.id)

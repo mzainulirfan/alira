@@ -199,6 +199,8 @@ export function BillDetailClient({
                     <img
                       src={reading.photo_url}
                       alt={`Foto meter ${bill.customer.name}`}
+                      loading="lazy"
+                      decoding="async"
                       className="h-28 w-full object-cover transition-transform group-hover:scale-[1.02]"
                     />
                     <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-[11px] font-medium shadow-sm">

@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { assertRole, verifySession } from "@/lib/auth/dal";
 import { createSession } from "@/lib/auth/session";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
@@ -113,6 +113,7 @@ export async function updateQuickActionsAction(
 
   revalidatePath("/dashboard");
   revalidatePath("/more/quick-actions");
+  revalidateTag("settings", "max");
   return { success: true };
 }
 
@@ -246,6 +247,7 @@ export async function saveTariffAction(
   if (error) return { error: `Gagal menyimpan tarif: ${error.message}` };
 
   revalidatePath("/more/tariffs");
+  revalidateTag("tariffs", "max");
   return { success: true };
 }
 
@@ -265,6 +267,7 @@ export async function setTariffActiveAction(
   await supabase.from("pam_tariffs").update({ is_active: active }).eq("id", id);
 
   revalidatePath("/more/tariffs");
+  revalidateTag("tariffs", "max");
 }
 
 export async function deleteTariffAction(formData: FormData): Promise<void> {
@@ -277,4 +280,5 @@ export async function deleteTariffAction(formData: FormData): Promise<void> {
   await supabase.from("pam_tariffs").delete().eq("id", id);
 
   revalidatePath("/more/tariffs");
+  revalidateTag("tariffs", "max");
 }

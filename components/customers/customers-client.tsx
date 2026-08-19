@@ -9,11 +9,13 @@ import {
   Cancel01Icon,
   UserGroupIcon,
   ArrowRight01Icon,
+  ArrowDown01Icon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CustomerForm } from "@/components/customers/customer-form";
+import { loadMoreCustomersAction } from "@/app/actions/customers";
 import type { Customer } from "@/lib/types";
 
 const STATUS_TABS = [
@@ -23,7 +25,8 @@ const STATUS_TABS = [
 ] as const;
 
 export function CustomersClient({
-  customers,
+  customers: initialCustomers,
+  nextCursor: initialNextCursor,
   total,
   activeTotal,
   query,
@@ -31,6 +34,7 @@ export function CustomersClient({
   canEdit,
 }: {
   customers: Customer[];
+  nextCursor: string | null;
   total: number;
   activeTotal: number;
   query: string;
@@ -41,6 +45,23 @@ export function CustomersClient({
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(query);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [customers, setCustomers] = useState(initialCustomers);
+  const [nextCursor, setNextCursor] = useState(initialNextCursor);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const [prevPage, setPrevPage] = useState({
+    customers: initialCustomers,
+    nextCursor: initialNextCursor,
+  });
+  if (
+    prevPage.customers !== initialCustomers ||
+    prevPage.nextCursor !== initialNextCursor
+  ) {
+    setPrevPage({ customers: initialCustomers, nextCursor: initialNextCursor });
+    setCustomers(initialCustomers);
+    setNextCursor(initialNextCursor);
+    setLoadingMore(false);
+  }
 
   const counts = {
     all: total,
@@ -66,7 +87,26 @@ export function CustomersClient({
       if (next.status === "all") sp.delete("status");
       else sp.set("status", next.status);
     }
+    sp.delete("cursor");
     router.push(`/customers?${sp.toString()}`);
+  }
+
+  async function loadMore() {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const result = await loadMoreCustomersAction({
+        query,
+        status,
+        cursor: nextCursor,
+      });
+      setCustomers((prev) => [...prev, ...result.customers]);
+      setNextCursor(result.nextCursor);
+    } catch (error) {
+      console.error("Gagal memuat data pelanggan lain:", error);
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
   function clearSearch() {
@@ -176,6 +216,18 @@ export function CustomersClient({
               </Card>
             </Link>
           ))}
+          {nextCursor && (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-1"
+              onClick={loadMore}
+              disabled={loadingMore}
+            >
+              <HugeiconsIcon icon={ArrowDown01Icon} />
+              {loadingMore ? "Memuat..." : "Muat Lebih Banyak"}
+            </Button>
+          )}
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { assertRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { isValidDate } from "@/lib/period";
@@ -53,5 +53,7 @@ export async function recordPaymentAction(
   revalidatePath(`/bills/${billId}`);
   revalidatePath("/dashboard");
   revalidatePath("/reports");
+  revalidateTag("payments", "max");
+  revalidateTag("bills", "max");
   return { success: true };
 }

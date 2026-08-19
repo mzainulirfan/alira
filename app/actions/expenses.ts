@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { assertRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { isExpenseCategory } from "@/lib/expenses";
@@ -22,6 +22,7 @@ function revalidateExpenses() {
   revalidatePath("/expenses");
   revalidatePath("/reports");
   revalidatePath("/dashboard");
+  revalidateTag("expenses", "max");
 }
 
 export async function saveExpenseAction(
