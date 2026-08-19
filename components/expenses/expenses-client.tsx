@@ -227,12 +227,11 @@ export function ExpensesClient({
         {expenses.length > 0 && (
           <Button
             variant="outline"
-            size="sm"
+            size="icon-xl"
             onClick={downloadCsv}
             title="Download CSV"
           >
             <HugeiconsIcon icon={Download01Icon} />
-            <span className="hidden sm:inline">CSV</span>
           </Button>
         )}
       </div>
