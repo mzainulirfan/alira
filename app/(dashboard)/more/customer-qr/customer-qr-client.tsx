@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
@@ -163,7 +163,7 @@ function QrPrintLabel({ customer }: { customer: Customer }) {
         marginSize={1}
         title={`QR ${customer.customer_number}`}
       />
-      <p className="mt-2 font-semibold">{customer.name}</p>
+      <p className="mt-2 font-medium">{customer.name}</p>
       <p className="font-mono text-xs font-medium">{customer.customer_number}</p>
       <p className="mt-0.5 text-[10px] text-slate-600">
         {customer.meter_number ? `Meter ${customer.meter_number}` : "Tanpa nomor meter"}

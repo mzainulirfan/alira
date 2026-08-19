@@ -64,7 +64,7 @@ export function CustomerQrDialog({ customer }: { customer: Customer }) {
             marginSize={2}
             title={`QR ${customer.customer_number}`}
           />
-          <p className="mt-4 text-lg font-semibold">{customer.name}</p>
+          <p className="mt-4 text-lg font-medium">{customer.name}</p>
           <p className="font-mono text-sm font-medium">{customer.customer_number}</p>
           <p className="mt-1 text-xs text-slate-600">
             {customer.meter_number

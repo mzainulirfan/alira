@@ -235,7 +235,7 @@ export function ExpenseForm({
                 value={values.amount}
                 onChange={(event) => update("amount", event.target.value)}
                 placeholder="0"
-                className="h-12 pl-10 text-lg font-semibold"
+                className="h-12 pl-10 text-lg font-medium"
                 aria-invalid={!!errors.amount}
               />
             </div>

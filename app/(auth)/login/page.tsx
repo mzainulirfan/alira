@@ -16,7 +16,7 @@ export default function LoginPage() {
             <HugeiconsIcon icon={DropletIcon} size={26} />
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-2xl font-semibold text-foreground">Alira</span>
+            <span className="text-2xl font-medium text-foreground">Alira</span>
             <p className="text-sm text-muted-foreground">
               Kelola air, meter, dan tagihan dalam satu tempat.
             </p>
@@ -24,7 +24,7 @@ export default function LoginPage() {
         </div>
 
         <section className="mt-8 flex flex-col rounded-lg border border-border bg-card p-6">
-          <h1 className="text-xl font-semibold text-foreground">Masuk ke Alira</h1>
+          <h1 className="text-xl font-medium text-foreground">Masuk ke Alira</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Masukkan username dan passcode 6 digit.
           </p>

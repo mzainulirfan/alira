@@ -6,7 +6,7 @@ export function ComingSoon({ title }: { title: string }) {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold">{title}</h1>
+        <h1 className="text-xl font-medium">{title}</h1>
         <p className="text-sm text-muted-foreground">
           Fitur ini sedang dalam pengembangan.
         </p>

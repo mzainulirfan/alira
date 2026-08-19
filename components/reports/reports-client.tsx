@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -64,7 +64,7 @@ export function ReportsClient({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold">Laporan</h1>
+          <h1 className="text-xl font-medium">Laporan</h1>
           <p className="text-sm text-muted-foreground">
             {formatShortPeriod(period)} · Saldo bersih {formatCurrency(summary.netCash)}
           </p>
@@ -113,7 +113,7 @@ export function ReportsClient({
                   <p className="text-xs text-muted-foreground">{r.customer_number}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-sm font-semibold">
+                  <span className="text-sm font-medium">
                     {formatCurrency(r.total_amount)}
                   </span>
                   <Badge
@@ -131,7 +131,7 @@ export function ReportsClient({
                         ? "Menunggak"
                         : r.bill_status === "unpaid"
                           ? "Belum"
-                          : "—"}
+                          : "â€”"}
                   </Badge>
                 </div>
               </div>

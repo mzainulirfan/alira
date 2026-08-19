@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -94,7 +94,7 @@ function TariffCard({
         </div>
 
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="text-base font-semibold">
+          <span className="text-base font-medium">
             {formatCurrency(tariff.price_per_m3)}
             <span className="text-xs font-normal text-muted-foreground"> / m³</span>
           </span>

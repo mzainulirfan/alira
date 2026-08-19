@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -136,7 +136,7 @@ export function MeterReadingsClient({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Pencatatan Meter</h1>
+        <h1 className="text-xl font-medium">Pencatatan Meter</h1>
         <QrScanner period={period} canEdit={canEdit} />
       </div>
 
@@ -234,7 +234,7 @@ export function MeterReadingsClient({
                 {STATUS_FILTERS.find((filter) => filter.key === status)?.label}
               </Badge>
             )}
-            {query && <Badge variant="secondary">“{query}”</Badge>}
+            {query && <Badge variant="secondary">â€œ{query}â€</Badge>}
           </div>
           <Button variant="ghost" size="sm" onClick={clearAllFilters}>
             <HugeiconsIcon icon={FilterResetIcon} />
@@ -309,14 +309,14 @@ export function MeterReadingsClient({
 
                   <div className="flex items-center justify-between text-sm">
                     <p className="text-muted-foreground">
-                      {formatMeter(reading.previous_reading)} →{" "}
+                      {formatMeter(reading.previous_reading)} â†’{" "}
                       <span className="font-medium text-foreground">
                         {formatMeter(reading.current_reading)}
                       </span>
                     </p>
                     <p className="text-muted-foreground">
                       Pemakaian{" "}
-                      <span className="font-semibold text-foreground">
+                      <span className="font-medium text-foreground">
                         {formatMeter(reading.usage)}
                       </span>
                     </p>

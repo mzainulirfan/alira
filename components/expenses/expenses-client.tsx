@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -145,7 +145,7 @@ export function ExpensesClient({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold">Pengeluaran</h1>
+          <h1 className="text-xl font-medium">Pengeluaran</h1>
           <p className="text-sm text-muted-foreground">
             {allExpenses.length} transaksi · {formatCurrency(totalAmount)}
           </p>
@@ -306,7 +306,7 @@ function ExpenseCard({
               </p>
             )}
           </div>
-          <span className="shrink-0 text-base font-semibold">
+          <span className="shrink-0 text-base font-medium">
             {formatCurrency(expense.amount)}
           </span>
         </div>
@@ -377,7 +377,7 @@ function DeleteExpense({ expense }: { expense: Expense }) {
            />
            <ConfirmationDialogSummary>
              <p className="font-medium">{expense.title}</p>
-             <p className="mt-1 text-lg font-semibold text-destructive">
+             <p className="mt-1 text-lg font-medium text-destructive">
                {formatCurrency(expense.amount)}
              </p>
            </ConfirmationDialogSummary>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -70,7 +70,7 @@ export function BillDetailClient({
       className="mx-auto flex w-full max-w-3xl flex-col gap-4 print:max-w-none"
     >
       <div className="hidden border-b pb-4 print:block">
-        <p className="text-xl font-semibold">{pamName}</p>
+        <p className="text-xl font-medium">{pamName}</p>
         <p className="text-sm text-muted-foreground">Tagihan Air Pelanggan</p>
       </div>
 
@@ -84,7 +84,7 @@ export function BillDetailClient({
             <span className="sr-only">Kembali</span>
           </Button>
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold">Detail Tagihan</h1>
+            <h1 className="text-xl font-medium">Detail Tagihan</h1>
             <p className="truncate text-sm text-muted-foreground">
               {formatShortPeriod(bill.period.slice(0, 7))}
             </p>
@@ -102,7 +102,7 @@ export function BillDetailClient({
               <HugeiconsIcon icon={InvoiceIcon} size={21} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{bill.customer.name}</p>
+              <p className="truncate font-medium">{bill.customer.name}</p>
               <p className="text-xs text-muted-foreground">
                 {bill.customer.customer_number}
                 {bill.customer.meter_number
@@ -124,7 +124,7 @@ export function BillDetailClient({
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Total Tagihan
             </p>
-            <p className="mt-1 text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
+            <p className="mt-1 text-3xl font-medium tracking-tight text-primary sm:text-4xl">
               {formatCurrency(bill.total_amount)}
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-primary/10 pt-3 text-xs text-muted-foreground">
@@ -184,7 +184,7 @@ export function BillDetailClient({
                 </div>
                 <div className="flex items-end justify-between border-t pt-3">
                   <span className="text-sm text-muted-foreground">Pemakaian</span>
-                  <span className="text-xl font-semibold">
+                  <span className="text-xl font-medium">
                     {formatMeter(bill.usage)}
                   </span>
                 </div>
@@ -230,7 +230,7 @@ export function BillDetailClient({
             <CostRow label="Abonemen" value={bill.monthly_fee} />
             <div className="flex items-center justify-between border-t pt-3">
               <span className="font-medium">Total</span>
-              <span className="text-lg font-semibold">
+              <span className="text-lg font-medium">
                 {formatCurrency(bill.total_amount)}
               </span>
             </div>
@@ -320,7 +320,7 @@ function MeterValue({
   return (
     <div className={align === "right" ? "text-right" : undefined}>
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-0.5 font-semibold">{formatMeter(value)}</p>
+      <p className="mt-0.5 font-medium">{formatMeter(value)}</p>
     </div>
   );
 }

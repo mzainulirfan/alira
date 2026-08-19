@@ -113,7 +113,7 @@ export function DashboardSummary({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold">Dashboard</h1>
+          <h1 className="text-xl font-medium">Dashboard</h1>
           <p className="text-sm text-muted-foreground">{formatShortPeriod(period)}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -172,7 +172,7 @@ export function DashboardSummary({
 
       {attentionItems.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold">Perlu Tindakan</h2>
+          <h2 className="text-sm font-medium">Perlu Tindakan</h2>
           <Card>
             <CardContent className="flex flex-col gap-1 py-2">
               {attentionItems.map((item) => (
@@ -184,7 +184,7 @@ export function DashboardSummary({
       )}
 
       {canViewFinance && <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold">Arus Kas</h2>
+        <h2 className="text-sm font-medium">Arus Kas</h2>
         <Card>
           <CardContent className="flex flex-col gap-2 py-3">
             <CashRow label="Pemasukan" value={formatCurrency(cashIn)} />
@@ -194,7 +194,7 @@ export function DashboardSummary({
               <div className="flex items-center gap-2">
                 <span
                   className={cn(
-                    "font-semibold",
+                    "font-medium",
                     netCash < 0 && "text-destructive"
                   )}
                 >
@@ -217,7 +217,7 @@ export function DashboardSummary({
 
       {activities.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold">Aktivitas Terbaru</h2>
+          <h2 className="text-sm font-medium">Aktivitas Terbaru</h2>
           <Card>
             <CardContent className="flex flex-col gap-1 py-2">
               {activities.map((activity) => (
@@ -273,7 +273,7 @@ function DashboardStat({
         <HugeiconsIcon icon={icon} className="size-4 text-primary" />
         <span className="truncate">{label}</span>
       </div>
-      <p className="truncate text-lg font-semibold sm:text-xl">{value}</p>
+      <p className="truncate text-lg font-medium sm:text-xl">{value}</p>
       <p className="truncate text-[11px] text-muted-foreground sm:text-xs">{sub}</p>
     </Link>
   );
@@ -313,7 +313,7 @@ function AttentionRow({
         />
         {label}
       </span>
-      <span className="flex items-center gap-1 font-semibold">
+      <span className="flex items-center gap-1 font-medium">
         {formatNumber(value)}
         <HugeiconsIcon
           icon={ArrowRight01Icon}

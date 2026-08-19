@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
@@ -100,7 +100,7 @@ export function PaymentForm({
           <span className="sr-only">Kembali</span>
         </Button>
         <div>
-          <h1 className="text-xl font-semibold">Catat Pembayaran</h1>
+          <h1 className="text-xl font-medium">Catat Pembayaran</h1>
           <p className="text-sm text-muted-foreground">
             Periksa tagihan sebelum menyimpan pembayaran
           </p>
@@ -114,7 +114,7 @@ export function PaymentForm({
               <HugeiconsIcon icon={InvoiceIcon} size={21} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{bill.customer.name}</p>
+              <p className="truncate font-medium">{bill.customer.name}</p>
               <p className="text-xs text-muted-foreground">
                 {bill.customer.customer_number} ·{" "}
                 {formatShortPeriod(bill.period.slice(0, 7))}
@@ -129,7 +129,7 @@ export function PaymentForm({
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Total yang Dibayar
             </p>
-            <p className="mt-1 text-3xl font-semibold tracking-tight text-primary">
+            <p className="mt-1 text-3xl font-medium tracking-tight text-primary">
               {formatCurrency(bill.total_amount)}
             </p>
             <p className="mt-2 text-xs text-muted-foreground">
@@ -245,7 +245,7 @@ export function PaymentForm({
                     value={cashReceived}
                     onChange={(event) => setCashReceived(event.target.value)}
                     placeholder="0"
-                    className="h-12 pl-10 text-lg font-semibold"
+                    className="h-12 pl-10 text-lg font-medium"
                     aria-invalid={cashReceived !== "" && cashDifference < 0}
                   />
                 </div>
@@ -257,14 +257,14 @@ export function PaymentForm({
                 ) : cashDifference < 0 ? (
                   <div className="flex items-center justify-between rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                     <span>Masih kurang</span>
-                    <span className="font-semibold">
+                    <span className="font-medium">
                       {formatCurrency(Math.abs(cashDifference))}
                     </span>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
                     <span>{cashDifference === 0 ? "Uang pas" : "Kembalian"}</span>
-                    <span className="font-semibold">
+                    <span className="font-medium">
                       {formatCurrency(cashDifference)}
                     </span>
                   </div>
@@ -311,7 +311,7 @@ export function PaymentForm({
                   {formatShortPeriod(bill.period.slice(0, 7))}
                 </p>
               </div>
-              <p className="font-semibold text-primary">
+              <p className="font-medium text-primary">
                 {formatCurrency(bill.total_amount)}
               </p>
             </div>

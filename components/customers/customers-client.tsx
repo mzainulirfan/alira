@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -141,7 +141,7 @@ export function CustomersClient({
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold">Pelanggan</h1>
+          <h1 className="text-xl font-medium">Pelanggan</h1>
           <p className="text-sm text-muted-foreground">
             {activeTotal} aktif dari {total} pelanggan
           </p>
@@ -239,7 +239,7 @@ export function CustomersClient({
                 {STATUS_TABS.find((tab) => tab.key === status)?.label}
               </Badge>
             )}
-            {query && <Badge variant="secondary">“{query}”</Badge>}
+            {query && <Badge variant="secondary">â€œ{query}â€</Badge>}
           </div>
           <Button variant="ghost" size="sm" onClick={resetFilters}>
             <HugeiconsIcon icon={FilterResetIcon} />

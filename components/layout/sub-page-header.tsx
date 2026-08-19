@@ -23,7 +23,7 @@ export function SubPageHeader({
       </Link>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold">{title}</h1>
+          <h1 className="text-xl font-medium">{title}</h1>
           {description && (
             <p className="text-sm text-muted-foreground">{description}</p>
           )}

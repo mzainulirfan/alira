@@ -120,7 +120,7 @@ export function LoginForm() {
               aria-describedby={hasError ? "login-error" : undefined}
               disabled={pending}
               className={cn(
-                "h-14 w-full min-w-0 flex-1 rounded-md border border-input bg-transparent text-center text-xl font-semibold text-foreground outline-none transition-colors",
+                "h-14 w-full min-w-0 flex-1 rounded-md border border-input bg-transparent text-center text-xl font-medium text-foreground outline-none transition-colors",
                 "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
                 hasError && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
               )}

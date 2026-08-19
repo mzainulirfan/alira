@@ -124,7 +124,7 @@ export default async function MorePage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold">Lainnya</h1>
+        <h1 className="text-xl font-medium">Lainnya</h1>
         <p className="text-sm text-muted-foreground">
           Kelola aplikasi dan akses tambahan
         </p>

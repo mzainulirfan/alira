@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -21,7 +21,7 @@ export function PaymentsClient({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold">Pembayaran</h1>
+        <h1 className="text-xl font-medium">Pembayaran</h1>
         <p className="text-sm text-muted-foreground">
           Riwayat pembayaran terbaru
         </p>
@@ -64,7 +64,7 @@ export function PaymentsClient({
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
-                    <span className="font-semibold">{formatCurrency(p.amount)}</span>
+                    <span className="font-medium">{formatCurrency(p.amount)}</span>
                     <HugeiconsIcon
                       icon={ArrowRight01Icon}
                       className="size-4 text-muted-foreground"

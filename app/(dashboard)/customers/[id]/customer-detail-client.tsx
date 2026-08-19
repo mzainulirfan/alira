@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { toast } from "sonner";
@@ -81,7 +81,7 @@ export function CustomerDetailClient({
           <HugeiconsIcon icon={ArrowLeft01Icon} />
           <span className="sr-only">Kembali</span>
         </Button>
-        <h1 className="text-xl font-semibold">Detail Pelanggan</h1>
+        <h1 className="text-xl font-medium">Detail Pelanggan</h1>
       </div>
 
       <Card>
@@ -92,7 +92,7 @@ export function CustomerDetailClient({
                 <HugeiconsIcon icon={UserGroupIcon} size={24} className="text-muted-foreground" />
               </div>
               <div>
-                <h2 className="font-semibold">{customer.name}</h2>
+                <h2 className="font-medium">{customer.name}</h2>
                 <p className="text-sm text-muted-foreground">{customer.customer_number}</p>
               </div>
             </div>
@@ -149,7 +149,7 @@ export function CustomerDetailClient({
           {lastReading ? (
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-semibold">{formatMeter(lastReading.current_reading)}</p>
+                <p className="text-2xl font-medium">{formatMeter(lastReading.current_reading)}</p>
                 <p className="text-sm text-muted-foreground">
                   Pemakaian {formatMeter(lastReading.usage)} ·{" "}
                   {formatShortPeriod(lastReading.period.slice(0, 7))}
@@ -172,7 +172,7 @@ export function CustomerDetailClient({
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-semibold">{formatCurrency(lastBill.total_amount)}</p>
+                  <p className="text-2xl font-medium">{formatCurrency(lastBill.total_amount)}</p>
                   <p className="text-sm text-muted-foreground">
                     {formatShortPeriod(lastBill.period.slice(0, 7))}
                   </p>

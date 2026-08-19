@@ -379,7 +379,7 @@ export function QrScanner({
               )}
 
               {!resolving && cameraStatus === "active" && decodedCode && (
-                <div className="pointer-events-none absolute inset-x-3 top-3 rounded-lg bg-success/90 px-3 py-1.5 text-center text-xs font-semibold text-white">
+                <div className="pointer-events-none absolute inset-x-3 top-3 rounded-lg bg-success/90 px-3 py-1.5 text-center text-xs font-medium text-white">
                   <span className="break-all">{decodedCode}</span>
                 </div>
               )}
@@ -469,7 +469,7 @@ export function QrScanner({
                     <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4" />
                     <span className="text-xs font-medium">Pelanggan ditemukan</span>
                   </div>
-                  <p className="mt-2 truncate text-lg font-semibold">{customer.name}</p>
+                  <p className="mt-2 truncate text-lg font-medium">{customer.name}</p>
                   <p className="text-sm text-muted-foreground">
                     {customer.customer_number}
                   </p>

@@ -20,7 +20,7 @@ export function Sidebar({ role }: { role: StaffRole }) {
         <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <HugeiconsIcon icon={DropletIcon} size={18} />
         </div>
-        <span className="font-semibold text-ink">Alira</span>
+        <span className="font-medium text-ink">Alira</span>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">

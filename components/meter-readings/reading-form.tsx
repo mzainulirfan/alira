@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   useActionState,
@@ -245,7 +245,7 @@ export function ReadingForm({
       transfer.items.add(compressed);
       if (photoRef.current) photoRef.current.files = transfer.files;
     } catch {
-      // gambar gagal dikompres (mis. HEIC) — kirim file asli
+      // gambar gagal dikompres (mis. HEIC) â€” kirim file asli
     }
   }
 
@@ -329,8 +329,8 @@ export function ReadingForm({
 
           <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-sm">
             <span className="text-muted-foreground">Pemakaian</span>
-            <span className="font-semibold">
-              {usage !== null ? formatMeter(usage) : "—"}
+            <span className="font-medium">
+              {usage !== null ? formatMeter(usage) : "â€”"}
             </span>
           </div>
 
@@ -342,7 +342,7 @@ export function ReadingForm({
                   {formatCurrency(Math.round(estimatedWater ?? 0))}
                   <span className="text-muted-foreground">
                     {" "}
-                    × {usage} m³
+                    Ã— {usage} m³
                   </span>
                 </span>
               </div>
@@ -354,7 +354,7 @@ export function ReadingForm({
               )}
               <div className="flex items-center justify-between border-t border-primary/15 pt-2 text-sm">
                 <span className="font-medium">Perkiraan tagihan</span>
-                <span className="text-base font-semibold text-primary">
+                <span className="text-base font-medium text-primary">
                   {formatCurrency(estimatedTotal)}
                 </span>
               </div>
@@ -480,7 +480,7 @@ export function ReadingForm({
            />
            <ConfirmationDialogSummary>
             <div className="border-b pb-3">
-              <p className="font-semibold">{customer.name}</p>
+              <p className="font-medium">{customer.name}</p>
               <p className="text-xs text-muted-foreground">
                 {customer.customer_number} ·{" "}
                 {customer.meter_number

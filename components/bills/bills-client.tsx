@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -161,7 +161,7 @@ export function BillsClient({
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Tagihan</h1>
+      <h1 className="text-xl font-medium">Tagihan</h1>
 
       <div className="flex flex-wrap items-center gap-2">
         <PeriodPicker period={period} basePath="/bills" />
@@ -333,7 +333,7 @@ function BillCard({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <span className="text-base font-semibold">
+            <span className="text-base font-medium">
               {formatCurrency(bill.total_amount)}
             </span>
             <HugeiconsIcon
