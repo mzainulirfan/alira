@@ -11,6 +11,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatMeter, formatShortPeriod } from "@/lib/format";
+import Link from "next/link";
 import type { Customer } from "@/lib/types";
 
 interface DashboardContentProps {
@@ -151,18 +152,18 @@ export default function DashboardContent({
       </div>
 
       <div className="flex gap-2">
-        <a href="/customer/bills">
+        <Link href="/customer/bills">
           <button className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-muted transition-colors">
             <HugeiconsIcon icon={InvoiceIcon} size={18} />
             Lihat Semua Tagihan
           </button>
-        </a>
-        <a href="/customer/meter-readings">
+        </Link>
+        <Link href="/customer/meter-readings">
           <button className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-4 py-3 text-sm font-medium hover:bg-muted transition-colors">
             <HugeiconsIcon icon={GaugeIcon} size={18} />
             Riwayat Meter
           </button>
-        </a>
+        </Link>
       </div>
     </div>
   );
