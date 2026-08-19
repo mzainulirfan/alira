@@ -80,7 +80,7 @@ export function CustomerQrClient({ customers }: { customers: Customer[] }) {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Cari nama, pelanggan, atau meter..."
-            className="h-8 w-full rounded-lg border border-border bg-card pr-9 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-11 w-full rounded-sm border border-border bg-card pr-9 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
           {search && (
             <button
