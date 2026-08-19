@@ -3,10 +3,8 @@ import { getCustomerDashboardData } from "@/app/actions/customer-data";
 import DashboardContent from "./DashboardContent";
 
 export default async function CustomerDashboardPage() {
-  const [profile, dashboardData] = await Promise.all([
-    getCurrentCustomerProfile(),
-    getCustomerDashboardData(),
-  ]);
+  const profile = await getCurrentCustomerProfile();
+  const dashboardData = await getCustomerDashboardData(profile?.id || "");
 
   return (
     <DashboardContent

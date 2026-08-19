@@ -11,14 +11,12 @@ export default async function CustomerMeterReadingsPage({
 }: {
   searchParams: Promise<{ page?: string; period?: string }>;
 }) {
-  const [profile, readingsData] = await Promise.all([
-    getCurrentCustomerProfile(),
-    getCustomerMeterReadings(1, 20),
-  ]);
-
+  const profile = await getCurrentCustomerProfile();
   const resolvedParams = await searchParams;
   const initialPage = parseInt(resolvedParams.page || "1", 10);
   const initialPeriodFilter = resolvedParams.period || "";
+
+  const readingsData = await getCustomerMeterReadings(profile?.id || "", initialPage, 20);
 
   return (
     <MeterReadingsTableClient

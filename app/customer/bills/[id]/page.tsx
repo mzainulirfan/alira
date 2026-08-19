@@ -9,10 +9,8 @@ interface PageProps {
 
 export default async function CustomerBillDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [profile, bill] = await Promise.all([
-    getCurrentCustomerProfile(),
-    getCustomerBillDetail(id),
-  ]);
+  const profile = await getCurrentCustomerProfile();
+  const bill = await getCustomerBillDetail(profile?.id || "", id);
 
   if (!bill) {
     notFound();

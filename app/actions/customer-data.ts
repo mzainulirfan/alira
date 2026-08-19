@@ -27,17 +27,14 @@ export type MeterSummary = {
   usage: number;
 };
 
-async function getDashboardDataUncached(): Promise<DashboardData> {
-  const profile = await getCurrentCustomerProfile();
-  if (!profile) return { activeBill: null, latestReading: null, lastLogin: null };
-
+async function getDashboardDataForCustomer(customerId: string): Promise<DashboardData> {
   const supabase = createSupabaseAdmin();
 
   const [billResult, readingResult] = await Promise.all([
     supabase
       .from("pam_bills")
       .select("id, period, total_amount, status, due_date")
-      .eq("customer_id", profile.id)
+      .eq("customer_id", customerId)
       .in("status", ["pending", "overdue"])
       .order("due_date", { ascending: true })
       .limit(1)
@@ -45,7 +42,7 @@ async function getDashboardDataUncached(): Promise<DashboardData> {
     supabase
       .from("pam_meter_readings")
       .select("id, period, current_reading, previous_reading, usage")
-      .eq("customer_id", profile.id)
+      .eq("customer_id", customerId)
       .order("period", { ascending: false })
       .limit(1)
       .maybeSingle(),
@@ -59,25 +56,23 @@ async function getDashboardDataUncached(): Promise<DashboardData> {
 }
 
 export const getCustomerDashboardData = unstable_cache(
-  getDashboardDataUncached,
+  getDashboardDataForCustomer,
   ["customer-dashboard"],
   { revalidate: 60, tags: ["customer-dashboard"] }
 );
 
 export async function getCustomerBills(
+  customerId: string,
   page = 1,
   limit = 20,
-  statusFilter?: "all" | "pending" | "paid" | "overdue"
+  statusFilter?: "all" | "unpaid" | "paid" | "overdue"
 ) {
-  const profile = await getCurrentCustomerProfile();
-  if (!profile) return { data: [], total: 0, page, limit };
-
   const supabase = createSupabaseAdmin();
 
   let query = supabase
     .from("pam_bills")
     .select("id, period, total_amount, status, due_date, created_at", { count: "exact" })
-    .eq("customer_id", profile.id)
+    .eq("customer_id", customerId)
     .order("period", { ascending: false });
 
   if (statusFilter && statusFilter !== "all") {
@@ -94,10 +89,7 @@ export async function getCustomerBills(
   return { data: data as Bill[], total: count ?? 0, page, limit };
 }
 
-export async function getCustomerBillDetail(billId: string) {
-  const profile = await getCurrentCustomerProfile();
-  if (!profile) return null;
-
+export async function getCustomerBillDetail(customerId: string, billId: string) {
   const supabase = createSupabaseAdmin();
 
   const { data: bill, error } = await supabase
@@ -106,17 +98,14 @@ export async function getCustomerBillDetail(billId: string) {
       "id, period, total_amount, status, due_date, monthly_fee, usage, price_per_m3, penalty, photo_path, created_at, paid_at, payment_method, payment_gateway_ref"
     )
     .eq("id", billId)
-    .eq("customer_id", profile.id)
+    .eq("customer_id", customerId)
     .maybeSingle();
 
   if (error || !bill) return null;
   return bill as unknown as Bill;
 }
 
-export async function getCustomerMeterReadings(page = 1, limit = 20) {
-  const profile = await getCurrentCustomerProfile();
-  if (!profile) return { data: [], total: 0, page, limit };
-
+export async function getCustomerMeterReadings(customerId: string, page = 1, limit = 20) {
   const supabase = createSupabaseAdmin();
 
   const query = supabase
@@ -125,7 +114,7 @@ export async function getCustomerMeterReadings(page = 1, limit = 20) {
       "id, period, previous_reading, current_reading, usage, photo_path, recorded_at, recorded_by",
       { count: "exact" }
     )
-    .eq("customer_id", profile.id)
+    .eq("customer_id", customerId)
     .order("period", { ascending: false })
     .range((page - 1) * limit, page * limit - 1);
 
