@@ -6,12 +6,18 @@ import {
   UserIcon,
   LockIcon,
   SaveIcon,
+  MailIcon,
+  MapPinIcon,
+  AiPhoneIcon,
+  CalendarIcon,
+  CircleCheckIcon,
   AlertCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { changePasscodeAction } from "@/app/actions/customer-auth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -32,8 +38,6 @@ interface ProfileContentProps {
   } | null;
   required: boolean;
 }
-
-const DIGIT_COUNT = 6;
 
 function PasscodeInput({
   digits,
@@ -66,6 +70,9 @@ function PasscodeInput({
     if (e.key === "Backspace") {
       e.preventDefault();
       if (digits[index] === "" && index > 0) {
+        const next = [...digits];
+        next[index] = "";
+        setDigits(next);
         document.getElementById(`${prefix}-${index}`)?.focus();
       } else {
         const next = [...digits];
@@ -89,7 +96,7 @@ function PasscodeInput({
 
   return (
     <div className="space-y-2">
-      <Label className="block text-sm font-medium">{label}</Label>
+      <Label className="block text-sm font-medium text-foreground">{label}</Label>
       <div className="flex gap-2" role="group" aria-label={label}>
         {Array.from({ length: DIGIT_COUNT }).map((_, i) => (
           <input
@@ -140,8 +147,11 @@ function PasscodeInput({
             aria-label={`Digit ${i + 1}`}
             disabled={disabled}
             className={cn(
-              "h-14 w-full min-w-0 flex-1 rounded-md border border-input bg-transparent text-center text-xl font-semibold text-foreground outline-none transition-colors",
-              "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              "h-12 w-10 min-w-0 rounded-lg border-2 bg-card text-center text-lg font-semibold text-foreground outline-none transition-all",
+              "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
+              "hover:border-primary/50",
+              "disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
+              "border-border"
             )}
           />
         ))}
@@ -149,6 +159,27 @@ function PasscodeInput({
     </div>
   );
 }
+
+function InfoRow({ icon, label, value, iconColor = "text-muted-foreground" }: {
+  icon: any;
+  label: string;
+  value: string;
+  iconColor?: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-border p-3 hover:bg-muted/30 transition-colors">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted/50">
+        <HugeiconsIcon icon={icon} size={18} className={iconColor} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+        <p className="font-medium text-foreground truncate">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+const DIGIT_COUNT = 6;
 
 export default function ProfileContent({ profile, required }: {
   profile: {
@@ -182,132 +213,134 @@ export default function ProfileContent({ profile, required }: {
   if (!profile) return null;
 
   return (
-    <div className="flex flex-col gap-4">
-      <header>
-        <h1 className="text-xl font-medium">Profil Saya</h1>
-        <p className="text-sm text-muted-foreground">Kelola informasi akun dan keamanan</p>
+    <div className="flex flex-col gap-6">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Profil Saya</h1>
+          <p className="text-sm text-muted-foreground mt-1">Kelola informasi akun dan keamanan</p>
+        </div>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <HugeiconsIcon icon={UserIcon} size={18} />
-            Informasi Pelanggan
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <HugeiconsIcon icon={UserIcon} size={18} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Nama</p>
-              <p className="font-medium">{profile?.name}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <HugeiconsIcon icon={UserIcon} size={18} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Nomor Pelanggan</p>
-              <p className="font-medium">{profile?.customer_number}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <HugeiconsIcon icon={UserIcon} size={18} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Nomor Meter</p>
-              <p className="font-medium">{profile?.meter_number || "-"}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <HugeiconsIcon icon={UserIcon} size={18} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Alamat</p>
-              <p className="font-medium">{profile?.address || "-"}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <HugeiconsIcon icon={UserIcon} size={18} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Telepon</p>
-              <p className="font-medium">{profile?.phone || "-"}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <HugeiconsIcon icon={UserIcon} size={18} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Status</p>
-              <p className="font-medium capitalize">{profile?.status}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 rounded-lg border border-border p-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <HugeiconsIcon icon={UserIcon} size={18} />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Bergabung Sejak</p>
-              <p className="font-medium">
-                {profile?.join_date ? new Date(profile.join_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <Card className="h-full">
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className="relative">
+                  <div className="size-24 rounded-2xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-primary-foreground">{profile?.name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase() || "?"}</span>
+                  </div>
+                  {profile.must_change_passcode && (
+                    <Badge variant="secondary" className="absolute -bottom-2 -right-2">
+                      <HugeiconsIcon icon={AlertCircleIcon} size={10} className="mr-1" />
+                      Ganti Passcode
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-center">
+                  <h2 className="text-xl font-semibold text-foreground">{profile?.name}</h2>
+                  <p className="text-sm text-muted-foreground font-mono">{profile?.customer_number}</p>
+                  <div className="mt-2 flex items-center justify-center gap-2">
+                    <Badge variant={profile?.status === "active" ? "success" : "secondary"} className="gap-1">
+                      <HugeiconsIcon icon={CircleCheckIcon} size={10} />
+                      {profile?.status === "active" ? "Aktif" : "Nonaktif"}
+                    </Badge>
+                  </div>
+                </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <HugeiconsIcon icon={LockIcon} size={18} />
-            Ganti Passcode
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={action} className="flex flex-col gap-4">
-            <div className="space-y-3">
-              <PasscodeInput
-                digits={oldDigits}
-                setDigits={setOldDigits}
-                refs={oldRefs}
-                prefix="old"
-                label="Passcode Lama"
-                disabled={pending}
-              />
-              <PasscodeInput
-                digits={newDigits}
-                setDigits={setNewDigits}
-                refs={newRefs}
-                prefix="new"
-                label="Passcode Baru"
-                disabled={pending}
-              />
-              <PasscodeInput
-                digits={confirmDigits}
-                setDigits={setConfirmDigits}
-                refs={confirmRefs}
-                prefix="confirm"
-                label="Konfirmasi Passcode Baru"
-                disabled={pending}
-              />
-            </div>
-            <input type="hidden" name="old_passcode" value={oldDigits.join("")} />
-            <input type="hidden" name="new_passcode" value={newDigits.join("")} />
-            <input type="hidden" name="confirm_passcode" value={confirmDigits.join("")} />
-            <Button type="submit" className="w-full" disabled={pending}>
-              Simpan Perubahan
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+                <div className="mt-6 pt-4 border-t border-border space-y-3">
+                  <InfoRow icon={CalendarIcon} label="Bergabung" value={profile?.join_date ? new Date(profile.join_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"} iconColor="text-primary" />
+                  <InfoRow icon={MailIcon} label="Status" value={profile?.status === "active" ? "Aktif" : "Nonaktif"} iconColor={profile?.status === "active" ? "text-success" : "text-muted-foreground"} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <HugeiconsIcon icon={UserIcon} size={18} className="text-primary" />
+                Informasi Pelanggan
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <InfoRow icon={UserIcon} label="Nama Lengkap" value={profile?.name || "-"} iconColor="text-primary" />
+                <InfoRow icon={MailIcon} label="Nomor Pelanggan" value={profile?.customer_number || "-"} iconColor="text-muted-foreground" />
+                <InfoRow icon={UserIcon} label="Nomor Meter" value={profile?.meter_number || "-"} iconColor="text-muted-foreground" />
+                <InfoRow icon={MailIcon} label="Telepon" value={profile?.phone || "-"} iconColor="text-muted-foreground" />
+                <InfoRow icon={MapPinIcon} label="Alamat" value={profile?.address || "-"} iconColor="text-muted-foreground" />
+                <InfoRow icon={CalendarIcon} label="Bergabung Sejak" value={profile?.join_date ? new Date(profile.join_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"} iconColor="text-primary" />
+                <InfoRow icon={CircleCheckIcon} label="Status" value={profile?.status === "active" ? "Aktif" : "Nonaktif"} iconColor={profile?.status === "active" ? "text-success" : "text-muted-foreground"} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <HugeiconsIcon icon={LockIcon} size={18} className="text-primary" />
+                Keamanan & Passcode
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form action={action} className="flex flex-col gap-6">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <PasscodeInput
+                    digits={oldDigits}
+                    setDigits={setOldDigits}
+                    refs={oldRefs}
+                    prefix="old"
+                    label="Passcode Lama"
+                    disabled={pending}
+                  />
+                  <PasscodeInput
+                    digits={newDigits}
+                    setDigits={setNewDigits}
+                    refs={newRefs}
+                    prefix="new"
+                    label="Passcode Baru"
+                    disabled={pending}
+                  />
+                  <PasscodeInput
+                    digits={confirmDigits}
+                    setDigits={setConfirmDigits}
+                    refs={confirmRefs}
+                    prefix="confirm"
+                    label="Konfirmasi Passcode Baru"
+                    disabled={pending}
+                  />
+                </div>
+                <input type="hidden" name="old_passcode" value={oldDigits.join("")} />
+                <input type="hidden" name="new_passcode" value={newDigits.join("")} />
+                <input type="hidden" name="confirm_passcode" value={confirmDigits.join("")} />
+                <Button type="submit" className="w-full sm:w-auto" disabled={pending} size="lg">
+                  <HugeiconsIcon icon={SaveIcon} size={16} className="mr-2" />
+                  Simpan Perubahan
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <HugeiconsIcon icon={AlertCircleIcon} size={18} />
+                Zona Bahaya
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">Tindakan ini tidak dapat dibatalkan. Semua data Anda akan dihapus permanen.</p>
+              <Button variant="destructive" className="w-full sm:w-auto">
+                <HugeiconsIcon icon={AlertCircleIcon} size={16} className="mr-2" />
+                Hapus Akun
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
