@@ -13,6 +13,7 @@ import {
   DashboardSquareSettingIcon,
   UserGroupIcon,
   UserIcon,
+  QrCodeIcon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +61,13 @@ const menuItems: {
     description: "Kelola akun dan hak akses",
     href: "/more/staff",
     icon: UserGroupIcon,
+    adminOnly: true,
+  },
+  {
+    title: "QR Pelanggan",
+    description: "Pilih dan cetak label QR pelanggan",
+    href: "/more/customer-qr",
+    icon: QrCodeIcon,
     adminOnly: true,
   },
   {

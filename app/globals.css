@@ -227,6 +227,52 @@
     box-shadow: none !important;
   }
 
+  body:has([data-qr-print-page]) {
+    background: #ffffff;
+  }
+
+  body:has([data-qr-print-page]) header,
+  body:has([data-qr-print-page]) aside,
+  body:has([data-qr-print-page]) nav {
+    display: none !important;
+  }
+
+  body:has([data-qr-print-page]) main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  [data-qr-print-grid] {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6mm;
+  }
+
+  body:has([data-print-customer-qr]) > * {
+    visibility: hidden;
+  }
+
+  body:has([data-print-customer-qr]) [data-slot="dialog-portal"],
+  body:has([data-print-customer-qr]) [data-slot="dialog-content"],
+  body:has([data-print-customer-qr]) [data-print-customer-qr] {
+    visibility: visible;
+  }
+
+  body:has([data-print-customer-qr]) [data-slot="dialog-overlay"],
+  body:has([data-print-customer-qr]) [data-slot="dialog-close"],
+  body:has([data-print-customer-qr]) [data-slot="dialog-header"] {
+    display: none !important;
+  }
+
+  body:has([data-print-customer-qr]) [data-slot="dialog-content"] {
+    position: static !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
   [data-print-hide] {
     display: none !important;
   }

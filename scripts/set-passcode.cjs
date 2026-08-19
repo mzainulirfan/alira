@@ -1,5 +1,5 @@
 const { createClient } = require("@supabase/supabase-js");
-const { createHash, randomBytes } = require("node:crypto");
+const { createHash, randomBytes, randomUUID } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -50,10 +50,34 @@ async function main() {
   );
 
   const hash = hashPasscode(passcode);
-  const { error } = await supabase
-    .from("pam_app_settings")
-    .update({ passcode_hash: hash, updated_at: new Date().toISOString() })
-    .eq("pam_name", "Alira");
+  const { data: profile, error: readError } = await supabase
+    .from("pam_profiles")
+    .select("id")
+    .eq("username", "admin")
+    .maybeSingle();
+
+  if (readError) {
+    console.error("Gagal mencari akun admin:", readError.message);
+    process.exit(1);
+  }
+
+  const payload = {
+    passcode_hash: hash,
+    session_epoch: randomUUID(),
+    status: "active",
+    must_change_passcode: false,
+    failed_attempts: 0,
+    locked_until: null,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = profile
+    ? await supabase.from("pam_profiles").update(payload).eq("id", profile.id)
+    : await supabase.from("pam_profiles").insert({
+        ...payload,
+        name: "Administrator",
+        username: "admin",
+        role: "admin",
+      });
 
   if (error) {
     console.error("Gagal update passcode:", error.message);

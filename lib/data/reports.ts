@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { requireRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { nextPeriodDate, periodToDate } from "@/lib/period";
 import { FINANCE_ROLES } from "@/lib/staff";
 
 export type ReportSummary = {
@@ -28,15 +29,6 @@ export type ReportRow = {
   bill_status: string;
 };
 
-export function periodToDate(period: string): string {
-  return `${period}-01`;
-}
-
-function nextPeriodDate(period: string): string {
-  const [year, month] = period.split("-").map(Number);
-  return new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
-}
-
 export const getReport = cache(
   async (period: string): Promise<{ summary: ReportSummary; rows: ReportRow[] }> => {
     await requireRole(FINANCE_ROLES);
@@ -55,7 +47,7 @@ export const getReport = cache(
           .select("id, customer_number, name, status"),
         supabase
           .from("pam_meter_readings")
-          .select("usage")
+          .select("previous_reading, current_reading, usage")
           .eq("period", periodToDate(period)),
         supabase
           .from("pam_bills")
@@ -120,6 +112,16 @@ export const getReport = cache(
       (s, b) => s + (b as { total_amount: number }).total_amount,
       0
     );
+    const invalidReading = (readings ?? []).find(
+      (reading) =>
+        Number(reading.previous_reading) < 0 ||
+        Number(reading.current_reading) < Number(reading.previous_reading) ||
+        Number(reading.usage) !==
+          Number(reading.current_reading) - Number(reading.previous_reading)
+    );
+    if (invalidReading) {
+      throw new Error("Data pencatatan meter lama tidak konsisten dan perlu diperbaiki.");
+    }
     const totalUsage = (readings ?? []).reduce(
       (s, r) => s + (r as { usage: number }).usage,
       0

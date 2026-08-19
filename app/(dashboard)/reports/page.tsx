@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/dal";
 import { getReport } from "@/lib/data/reports";
-import { currentPeriod } from "@/lib/data/bills";
+import { currentPeriod, isValidPeriod } from "@/lib/period";
 import { ReportsClient } from "@/components/reports/reports-client";
 import { FINANCE_ROLES } from "@/lib/staff";
 
@@ -16,10 +16,7 @@ export default async function ReportsPage({
 }) {
   await requireRole(FINANCE_ROLES);
   const params = await searchParams;
-  const period =
-    typeof params.period === "string" && /^\d{4}-\d{2}$/.test(params.period)
-      ? params.period
-      : currentPeriod();
+  const period = isValidPeriod(params.period) ? params.period : currentPeriod();
 
   const { summary, rows } = await getReport(period);
 

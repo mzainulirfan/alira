@@ -3,6 +3,8 @@ import "server-only";
 import { cache } from "react";
 import { verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { periodToDate } from "@/lib/period";
+import { createSignedUrlMap } from "@/lib/storage";
 import type { Bill, Customer, MeterReading, Tariff } from "@/lib/types";
 
 export type BillWithCustomer = Bill & {
@@ -13,15 +15,6 @@ export type BillWithCustomer = Bill & {
 };
 
 export type AdjacentBill = Pick<Bill, "id" | "period">;
-
-export function periodToDate(period: string): string {
-  return `${period}-01`;
-}
-
-export function currentPeriod(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
 
 export const getActiveTariff = cache(async (): Promise<Tariff | null> => {
   await verifySession();
@@ -88,7 +81,17 @@ export const getBillReading = cache(
       .maybeSingle();
 
     if (error) throw new Error(error.message);
-    return data as MeterReading | null;
+    const reading = data as MeterReading | null;
+    if (!reading) return null;
+    const signedUrls = await createSignedUrlMap(
+      supabase,
+      "meter-photos",
+      [reading.photo_path]
+    );
+    return {
+      ...reading,
+      photo_url: signedUrls.get(reading.photo_path ?? "") ?? null,
+    };
   }
 );
 

@@ -11,7 +11,7 @@ Kelola air, meter, dan tagihan dalam satu tempat.
 Buat proyek di [supabase.com](https://supabase.com), lalu jalankan migrasi schema:
 
 1. Buka **SQL Editor** di dashboard Supabase.
-2. Salin isi `supabase/migrations/0001_init.sql` dan jalankan.
+2. Jalankan seluruh file di `supabase/migrations/` secara berurutan sesuai nomor.
 
 ### 2. Konfigurasi environment
 
@@ -36,7 +36,8 @@ SESSION_SECRET=<hasil dari: openssl rand -base64 32>
 npm run set-passcode -- 123456
 ```
 
-Passcode harus 6 digit angka dan disimpan sebagai hash.
+Perintah ini membuat atau memperbarui akun `admin`. Passcode harus 6 digit angka
+dan disimpan sebagai hash.
 
 ### 4. Jalankan aplikasi
 
@@ -77,8 +78,8 @@ supabase/migrations/   Schema SQL
 
 ## Auth
 
-Login berbasis passcode sederhana (bukan Supabase Auth):
+Login berbasis username dan passcode (bukan Supabase Auth):
 
-- Passcode di-hash (scrypt-like) dan disimpan di tabel `pam_app_settings.passcode_hash`.
-- Setelah verifikasi, session JWT disimpan di cookie httpOnly.
-- `proxy.ts` melindungi semua route `/dashboard*` dan mengarahkan ke `/login`.
+- Passcode setiap pegawai di-hash dan disimpan di tabel `pam_profiles`.
+- Setelah verifikasi, session JWT disimpan di cookie httpOnly dan terikat ke versi sesi akun.
+- `proxy.ts` melindungi seluruh halaman dashboard dan mengarahkan ke `/login`.

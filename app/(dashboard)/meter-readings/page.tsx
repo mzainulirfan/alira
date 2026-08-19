@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { verifySession } from "@/lib/auth/dal";
 import {
-  currentPeriod,
   getCustomerReadingStatus,
 } from "@/lib/data/meter-readings";
+import { currentPeriod, isValidPeriod } from "@/lib/period";
 import { getActiveTariff } from "@/lib/data/bills";
 import { MeterReadingsClient } from "@/components/meter-readings/meter-readings-client";
 import { METER_ROLES } from "@/lib/staff";
@@ -15,14 +15,16 @@ export const metadata: Metadata = {
 export default async function MeterReadingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string; q?: string; status?: string }>;
+  searchParams: Promise<{
+    period?: string;
+    q?: string;
+    status?: string;
+    open?: string;
+  }>;
 }) {
   const session = await verifySession();
   const params = await searchParams;
-  const period =
-    typeof params.period === "string" && /^\d{4}-\d{2}$/.test(params.period)
-      ? params.period
-      : currentPeriod();
+  const period = isValidPeriod(params.period) ? params.period : currentPeriod();
   const query = typeof params.q === "string" ? params.q : "";
 
   const [rows, tariff] = await Promise.all([
@@ -48,8 +50,6 @@ export default async function MeterReadingsPage({
     );
   });
 
-  const pendingCustomers = sorted.filter((r) => !r.reading);
-
   const filtered = sorted.filter((r) => {
     const matchesStatus =
       status === "all" ||
@@ -64,6 +64,7 @@ export default async function MeterReadingsPage({
       (r.customer.meter_number ?? "").toLowerCase().includes(q)
     );
   });
+  const pendingCustomers = filtered.filter((row) => !row.reading);
 
   return (
     <MeterReadingsClient
@@ -81,6 +82,7 @@ export default async function MeterReadingsPage({
         Boolean(params.q) ||
         typeof params.status === "string"
       }
+      openCustomerId={typeof params.open === "string" ? params.open : null}
     />
   );
 }

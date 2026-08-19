@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { assertRole } from "@/lib/auth/dal";
 import { hashPasscode } from "@/lib/auth/passcode";
@@ -137,7 +138,11 @@ export async function setStaffStatusAction(formData: FormData): Promise<void> {
   const supabase = createSupabaseAdmin();
   const { error } = await supabase
     .from("pam_profiles")
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({
+      status,
+      session_epoch: randomUUID(),
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id);
   if (error) throw new Error(`Gagal mengubah status pegawai: ${error.message}`);
   revalidateStaff();
@@ -162,6 +167,7 @@ export async function resetStaffPasscodeAction(
     .from("pam_profiles")
     .update({
       passcode_hash: hashPasscode(passcode),
+      session_epoch: randomUUID(),
       must_change_passcode: true,
       failed_attempts: 0,
       locked_until: null,

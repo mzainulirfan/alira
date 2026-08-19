@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth/dal";
-import { currentPeriod } from "@/lib/data/bills";
+import { currentPeriod, isValidPeriod } from "@/lib/period";
 import { getExpenses } from "@/lib/data/expenses";
 import { isExpenseCategory } from "@/lib/expenses";
 import { ExpensesClient } from "@/components/expenses/expenses-client";
@@ -17,10 +17,7 @@ export default async function ExpensesPage({
 }) {
   await requireRole(FINANCE_ROLES);
   const params = await searchParams;
-  const period =
-    typeof params.period === "string" && /^\d{4}-\d{2}$/.test(params.period)
-      ? params.period
-      : currentPeriod();
+  const period = isValidPeriod(params.period) ? params.period : currentPeriod();
   const category = isExpenseCategory(params.category) ? params.category : null;
   const allExpenses = await getExpenses(period);
   const expenses = category

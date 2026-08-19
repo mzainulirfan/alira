@@ -47,38 +47,55 @@ export async function loginAction(
 
   const valid = verifyPasscode(passcode, data.passcode_hash);
   if (!valid) {
-    const previousAttempts = lockedUntil && lockedUntil <= now ? 0 : data.failed_attempts;
-    const failedAttempts = previousAttempts + 1;
-    const shouldLock = failedAttempts >= 5;
-    await supabase
-      .from("pam_profiles")
-      .update({
-        failed_attempts: failedAttempts,
-        locked_until: shouldLock
-          ? new Date(Date.now() + 15 * 60 * 1000).toISOString()
-          : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", data.id);
+    const { data: failedLogin, error: failedLoginError } = await supabase.rpc(
+      "pam_register_failed_login",
+      {
+        p_profile_id: data.id,
+        p_expected_passcode_hash: data.passcode_hash,
+      }
+    );
+    if (failedLoginError) {
+      return { error: "Gagal memverifikasi login. Coba kembali." };
+    }
+    const result = failedLogin as { accepted?: boolean; locked?: boolean } | null;
     return {
-      error: shouldLock
+      error: result?.locked
         ? "Akun dikunci selama 15 menit karena terlalu banyak percobaan."
         : "Username atau passcode salah.",
     };
   }
 
-  await supabase
-    .from("pam_profiles")
-    .update({
-      failed_attempts: 0,
-      locked_until: null,
-      last_login_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", data.id);
+  const { data: completedLogin, error: completedLoginError } = await supabase.rpc(
+    "pam_complete_login",
+    {
+      p_profile_id: data.id,
+      p_expected_passcode_hash: data.passcode_hash,
+    }
+  );
+  if (completedLoginError) {
+    return { error: "Gagal memverifikasi login. Coba kembali." };
+  }
+  const result = completedLogin as {
+    success?: boolean;
+    locked?: boolean;
+    role?: unknown;
+    must_change_passcode?: boolean;
+    session_epoch?: string;
+  } | null;
+  if (!result?.success || !isStaffRole(result.role) || !result.session_epoch) {
+    return {
+      error: result?.locked
+        ? "Akun sementara dikunci. Coba kembali beberapa menit lagi."
+        : "Username atau passcode salah.",
+    };
+  }
 
-  await createSession({ userId: data.id, role: data.role });
-  if (data.must_change_passcode) redirect("/more/security?required=true");
+  await createSession({
+    userId: data.id,
+    role: result.role,
+    sessionEpoch: result.session_epoch,
+  });
+  if (result.must_change_passcode) redirect("/more/security?required=true");
   redirect("/dashboard");
 }
 

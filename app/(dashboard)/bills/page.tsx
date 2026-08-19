@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { verifySession } from "@/lib/auth/dal";
-import { currentPeriod, getActiveTariff, getPeriodBills } from "@/lib/data/bills";
+import { getActiveTariff, getPeriodBills } from "@/lib/data/bills";
+import { currentPeriod, isValidPeriod } from "@/lib/period";
 import { getPeriodReadings } from "@/lib/data/meter-readings";
 import { BillsClient } from "@/components/bills/bills-client";
 import { canManageFinance } from "@/lib/staff";
@@ -16,10 +17,7 @@ export default async function BillsPage({
 }) {
   const session = await verifySession();
   const params = await searchParams;
-  const period =
-    typeof params.period === "string" && /^\d{4}-\d{2}$/.test(params.period)
-      ? params.period
-      : currentPeriod();
+  const period = isValidPeriod(params.period) ? params.period : currentPeriod();
   const status = typeof params.status === "string" ? params.status : "all";
   const customerId =
     typeof params.customer === "string" && params.customer ? params.customer : null;

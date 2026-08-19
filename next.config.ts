@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   experimental: {
     useOffline: true,
+    serverActions: {
+      bodySizeLimit: "6mb",
+    },
   },
   async headers() {
     return [

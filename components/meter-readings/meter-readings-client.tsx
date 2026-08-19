@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PeriodPicker } from "@/components/ui/period-picker";
 import { ReadingForm, ReadingStatusBadge } from "@/components/meter-readings/reading-form";
+import { QrScanner } from "@/components/meter-readings/qr-scanner";
 import { formatMeter, formatShortPeriod } from "@/lib/format";
 import type { ReadingWithCustomer } from "@/lib/data/meter-readings";
 import type { Tariff } from "@/lib/types";
@@ -36,6 +37,7 @@ export function MeterReadingsClient({
   pendingCustomers,
   canEdit,
   hasActiveFilters,
+  openCustomerId,
 }: {
   rows: ReadingWithCustomer[];
   period: string;
@@ -47,11 +49,13 @@ export function MeterReadingsClient({
   pendingCustomers: ReadingWithCustomer[];
   canEdit: boolean;
   hasActiveFilters: boolean;
+  openCustomerId: string | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(query);
   const inputRef = useRef<HTMLInputElement>(null);
+  const openedCustomerRef = useRef<string | null>(null);
 
   const pending = total - done;
 
@@ -69,6 +73,24 @@ export function MeterReadingsClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
+  useEffect(() => {
+    if (!openCustomerId) {
+      openedCustomerRef.current = null;
+      return;
+    }
+    if (openedCustomerRef.current === openCustomerId) return;
+    openedCustomerRef.current = openCustomerId;
+    const frame = requestAnimationFrame(() => {
+      window.dispatchEvent(
+        new CustomEvent("alira:open-reading", { detail: openCustomerId })
+      );
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("open");
+      router.replace(`/meter-readings?${params.toString()}`);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [openCustomerId, router, searchParams]);
+
   function updateParams(next: { q?: string; status?: string }) {
     const sp = new URLSearchParams(searchParams.toString());
     if (next.q !== undefined) {
@@ -76,7 +98,7 @@ export function MeterReadingsClient({
       else sp.delete("q");
     }
     if (next.status !== undefined) {
-      if (next.status === "all") sp.delete("status");
+      if (next.status === "pending") sp.delete("status");
       else sp.set("status", next.status);
     }
     router.push(`/meter-readings?${sp.toString()}`);
@@ -97,7 +119,10 @@ export function MeterReadingsClient({
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold">Pencatatan Meter</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold">Pencatatan Meter</h1>
+        <QrScanner period={period} canEdit={canEdit} />
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <PeriodPicker period={period} basePath="/meter-readings" />

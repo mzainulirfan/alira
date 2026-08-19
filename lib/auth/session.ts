@@ -11,6 +11,7 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 export type SessionPayload = {
   userId: string;
   role: StaffRole;
+  sessionEpoch: string;
   expiresAt: number;
 };
 
@@ -49,10 +50,13 @@ export async function getSession(): Promise<SessionPayload | null> {
     const { payload } = await jwtVerify(token, getSecretKey(), {
       algorithms: ["HS256"],
     });
-    if (!isStaffRole(payload.role)) return null;
+    if (!isStaffRole(payload.role) || typeof payload.sessionEpoch !== "string") {
+      return null;
+    }
     return {
       userId: String(payload.userId),
       role: payload.role,
+      sessionEpoch: payload.sessionEpoch,
       expiresAt: Number(payload.expiresAt),
     };
   } catch {
@@ -73,6 +77,7 @@ export async function updateSession() {
   const token = await new SignJWT({
     userId: session.userId,
     role: session.role,
+    sessionEpoch: session.sessionEpoch,
     expiresAt,
   })
     .setProtectedHeader({ alg: "HS256" })

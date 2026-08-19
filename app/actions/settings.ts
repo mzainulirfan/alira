@@ -1,9 +1,11 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { assertRole, verifySession } from "@/lib/auth/dal";
+import { createSession } from "@/lib/auth/session";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
-import { hashPasscode } from "@/lib/auth/passcode";
+import { hashPasscode, verifyPasscode } from "@/lib/auth/passcode";
 import { isQuickActionKey, type QuickActionKey } from "@/lib/quick-actions";
 import { ADMIN_ROLES } from "@/lib/staff";
 import type { AppSettings } from "@/lib/types";
@@ -154,23 +156,37 @@ export async function updatePasscodeAction(
     return { error: "Passcode belum diatur." };
   }
 
-  const { verifyPasscode } = await import("@/lib/auth/passcode");
-  const ok = await verifyPasscode(current, row.passcode_hash);
+  const ok = verifyPasscode(current, row.passcode_hash);
   if (!ok) {
     return { error: "Passcode saat ini salah." };
   }
 
   const hash = await hashPasscode(next);
-  const { error } = await supabase
+  const sessionEpoch = randomUUID();
+  const { data: updated, error } = await supabase
     .from("pam_profiles")
     .update({
       passcode_hash: hash,
+      session_epoch: sessionEpoch,
       must_change_passcode: false,
+      failed_attempts: 0,
+      locked_until: null,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", row.id);
+    .eq("id", row.id)
+    .eq("passcode_hash", row.passcode_hash)
+    .eq("session_epoch", session.sessionEpoch)
+    .select("id")
+    .maybeSingle();
 
   if (error) return { error: `Gagal mengganti passcode: ${error.message}` };
+  if (!updated) return { error: "Data akun berubah. Muat ulang lalu coba kembali." };
+
+  await createSession({
+    userId: session.userId,
+    role: session.role,
+    sessionEpoch,
+  });
 
   revalidatePath("/", "layout");
   return { success: true };

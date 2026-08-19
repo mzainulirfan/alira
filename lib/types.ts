@@ -20,6 +20,7 @@ export type MeterReading = {
   previous_reading: number;
   current_reading: number;
   usage: number;
+  photo_path: string | null;
   photo_url: string | null;
   recorded_by: string | null;
   recorded_at: string | null;
@@ -32,6 +33,7 @@ export type Bill = {
   meter_reading_id: string | null;
   period: string;
   usage: number;
+  price_per_m3: number | null;
   water_amount: number;
   monthly_fee: number;
   total_amount: number;
@@ -87,6 +89,7 @@ export type StaffProfile = {
   name: string;
   role: StaffRole;
   status: StaffStatus;
+  session_epoch: string;
   must_change_passcode: boolean;
   failed_attempts: number;
   locked_until: string | null;

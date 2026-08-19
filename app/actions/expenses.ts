@@ -5,29 +5,18 @@ import { revalidatePath } from "next/cache";
 import { assertRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { isExpenseCategory } from "@/lib/expenses";
+import { getImageExtension, hasValidImageSignature } from "@/lib/image-upload";
+import { isValidDate } from "@/lib/period";
+import { ensurePrivateBucket, removeStorageObjects } from "@/lib/storage";
 import { FINANCE_ROLES } from "@/lib/staff";
 
 const EXPENSE_RECEIPTS_BUCKET = "expense-receipts";
 const MAX_RECEIPT_SIZE = 5 * 1024 * 1024;
-const RECEIPT_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export type ExpenseFormState = {
   error?: string;
   success?: boolean;
 };
-
-async function ensureBucket(
-  supabase: ReturnType<typeof createSupabaseAdmin>
-) {
-  const { data } = await supabase.storage.getBucket(EXPENSE_RECEIPTS_BUCKET);
-  if (data) return;
-
-  const { error } = await supabase.storage.createBucket(
-    EXPENSE_RECEIPTS_BUCKET,
-    { public: true }
-  );
-  if (error) throw new Error(`Gagal menyiapkan penyimpanan bukti: ${error.message}`);
-}
 
 function revalidateExpenses() {
   revalidatePath("/expenses");
@@ -53,11 +42,7 @@ export async function saveExpenseAction(
   const receipt = formData.get("receipt");
   const removeReceipt = formData.get("remove_receipt") === "true";
 
-  if (
-    typeof expenseDate !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(expenseDate) ||
-    Number.isNaN(new Date(`${expenseDate}T00:00:00Z`).getTime())
-  ) {
+  if (!isValidDate(expenseDate)) {
     return { error: "Tanggal pengeluaran tidak valid." };
   }
   if (typeof title !== "string" || !title.trim()) {
@@ -73,11 +58,14 @@ export async function saveExpenseAction(
     return { error: "Metode pembayaran tidak valid." };
   }
   if (receipt instanceof File && receipt.size > 0) {
-    if (!RECEIPT_TYPES.has(receipt.type)) {
+    if (!getImageExtension(receipt.type)) {
       return { error: "Bukti harus berupa file JPEG, PNG, atau WebP." };
     }
     if (receipt.size > MAX_RECEIPT_SIZE) {
       return { error: "Ukuran bukti maksimal 5 MB." };
+    }
+    if (!(await hasValidImageSignature(receipt))) {
+      return { error: "Isi file bukti tidak valid." };
     }
   }
 
@@ -99,32 +87,27 @@ export async function saveExpenseAction(
 
   const expenseId = id ?? randomUUID();
   let receiptPath = previousReceiptPath;
-  let receiptUrl: string | null = null;
+  let uploadedReceiptPath: string | null = null;
 
   try {
     if (receipt instanceof File && receipt.size > 0) {
-      await ensureBucket(supabase);
-      receiptPath = expenseId;
+      await ensurePrivateBucket(supabase, EXPENSE_RECEIPTS_BUCKET);
+      uploadedReceiptPath =
+        `${expenseId}/${randomUUID()}.` + getImageExtension(receipt.type);
+      receiptPath = uploadedReceiptPath;
       const { error: uploadError } = await supabase.storage
         .from(EXPENSE_RECEIPTS_BUCKET)
         .upload(receiptPath, receipt, {
-          upsert: true,
+          upsert: false,
           contentType: receipt.type,
         });
 
       if (uploadError) {
+        uploadedReceiptPath = null;
         return { error: `Gagal mengunggah bukti: ${uploadError.message}` };
       }
-    } else if (removeReceipt && receiptPath) {
-      await supabase.storage.from(EXPENSE_RECEIPTS_BUCKET).remove([receiptPath]);
+    } else if (removeReceipt) {
       receiptPath = null;
-    }
-
-    if (receiptPath) {
-      const { data } = supabase.storage
-        .from(EXPENSE_RECEIPTS_BUCKET)
-        .getPublicUrl(receiptPath);
-      receiptUrl = data.publicUrl;
     }
 
     const payload = {
@@ -135,26 +118,59 @@ export async function saveExpenseAction(
       payee: typeof payee === "string" && payee.trim() ? payee.trim() : null,
       payment_method: paymentMethod,
       receipt_path: receiptPath,
-      receipt_url: receiptUrl,
+      receipt_url: null,
       notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = id
-      ? await supabase.from("pam_expenses").update(payload).eq("id", id)
-      : await supabase.from("pam_expenses").insert({
+    let saveResult;
+    if (id) {
+      let updateQuery = supabase.from("pam_expenses").update(payload).eq("id", id);
+      updateQuery = previousReceiptPath
+        ? updateQuery.eq("receipt_path", previousReceiptPath)
+        : updateQuery.is("receipt_path", null);
+      saveResult = await updateQuery.select("id").maybeSingle();
+    } else {
+      saveResult = await supabase
+        .from("pam_expenses")
+        .insert({
           id: expenseId,
           ...payload,
           created_by: session.userId,
-        });
+        })
+        .select("id")
+        .maybeSingle();
+    }
+    const { data: saved, error } = saveResult;
 
-    if (error) {
-      if (!id && receiptPath) {
-        await supabase.storage.from(EXPENSE_RECEIPTS_BUCKET).remove([receiptPath]);
+    if (error || !saved) {
+      if (uploadedReceiptPath) {
+        await removeStorageObjects(
+          supabase,
+          EXPENSE_RECEIPTS_BUCKET,
+          [uploadedReceiptPath]
+        );
       }
-      return { error: `Gagal menyimpan pengeluaran: ${error.message}` };
+      return {
+        error: `Gagal menyimpan pengeluaran: ${error?.message ?? "data tidak ditemukan"}`,
+      };
+    }
+
+    if (previousReceiptPath && previousReceiptPath !== receiptPath) {
+      await removeStorageObjects(
+        supabase,
+        EXPENSE_RECEIPTS_BUCKET,
+        [previousReceiptPath]
+      );
     }
   } catch (error) {
+    if (uploadedReceiptPath) {
+      await removeStorageObjects(
+        supabase,
+        EXPENSE_RECEIPTS_BUCKET,
+        [uploadedReceiptPath]
+      );
+    }
     return {
       error:
         error instanceof Error ? error.message : "Gagal menyimpan pengeluaran.",
@@ -184,9 +200,11 @@ export async function deleteExpenseAction(formData: FormData): Promise<void> {
   if (error) throw new Error(`Gagal menghapus pengeluaran: ${error.message}`);
 
   if (expense.receipt_path) {
-    await supabase.storage
-      .from(EXPENSE_RECEIPTS_BUCKET)
-      .remove([expense.receipt_path as string]);
+    await removeStorageObjects(
+      supabase,
+      EXPENSE_RECEIPTS_BUCKET,
+      [expense.receipt_path as string]
+    );
   }
 
   revalidateExpenses();
@@ -209,13 +227,7 @@ export async function removeExpenseReceiptAction(
 
   if (readError || !expense) throw new Error("Pengeluaran tidak ditemukan.");
 
-  if (expense.receipt_path) {
-    await supabase.storage
-      .from(EXPENSE_RECEIPTS_BUCKET)
-      .remove([expense.receipt_path as string]);
-  }
-
-  const { error } = await supabase
+  let updateQuery = supabase
     .from("pam_expenses")
     .update({
       receipt_path: null,
@@ -223,7 +235,19 @@ export async function removeExpenseReceiptAction(
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
+  updateQuery = expense.receipt_path
+    ? updateQuery.eq("receipt_path", expense.receipt_path)
+    : updateQuery.is("receipt_path", null);
+  const { data: updated, error } = await updateQuery.select("id").maybeSingle();
 
   if (error) throw new Error(`Gagal menghapus bukti: ${error.message}`);
+  if (!updated) throw new Error("Data pengeluaran berubah. Muat ulang lalu coba kembali.");
+  if (expense.receipt_path) {
+    await removeStorageObjects(
+      supabase,
+      EXPENSE_RECEIPTS_BUCKET,
+      [expense.receipt_path as string]
+    );
+  }
   revalidateExpenses();
 }

@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CustomerForm } from "@/components/customers/customer-form";
+import { CustomerQrDialog } from "@/components/customers/customer-qr-dialog";
 import { ReadingForm } from "@/components/meter-readings/reading-form";
 import { setCustomerStatusAction } from "@/app/actions/customers";
 import {
@@ -55,6 +56,7 @@ export function CustomerDetailClient({
   canChangeStatus,
   canRecordMeter,
   canRecordPayment,
+  canManageQr,
 }: {
   customer: Customer;
   readings: MeterReading[];
@@ -65,6 +67,7 @@ export function CustomerDetailClient({
   canChangeStatus: boolean;
   canRecordMeter: boolean;
   canRecordPayment: boolean;
+  canManageQr: boolean;
 }) {
   const lastReading = readings[0] ?? null;
   const lastBill = bills[0] ?? null;
@@ -97,7 +100,10 @@ export function CustomerDetailClient({
               <Badge variant={customer.status === "active" ? "success" : "secondary"}>
                 {customer.status === "active" ? "Aktif" : "Nonaktif"}
               </Badge>
-              {canEdit && <CustomerForm mode="edit" customer={customer} />}
+              <div className="flex items-center gap-2">
+                {canManageQr && <CustomerQrDialog customer={customer} />}
+                {canEdit && <CustomerForm mode="edit" customer={customer} />}
+              </div>
             </div>
           </div>
 

@@ -4,13 +4,13 @@ import { cache } from "react";
 import { requireRole } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { isExpenseCategory } from "@/lib/expenses";
+import { nextPeriodDate, periodToDate } from "@/lib/period";
+import { createSignedUrlMap } from "@/lib/storage";
 import type { Expense, ExpenseCategory } from "@/lib/types";
 import { FINANCE_ROLES } from "@/lib/staff";
 
 function periodBounds(period: string): { start: string; end: string } {
-  const [year, month] = period.split("-").map(Number);
-  const end = new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
-  return { start: `${period}-01`, end };
+  return { start: periodToDate(period), end: nextPeriodDate(period) };
 }
 
 export const getExpenses = cache(
@@ -33,7 +33,16 @@ export const getExpenses = cache(
 
     const { data, error } = await query;
     if (error) throw new Error(error.message);
-    return (data ?? []) as Expense[];
+    const expenses = (data ?? []) as Expense[];
+    const signedUrls = await createSignedUrlMap(
+      supabase,
+      "expense-receipts",
+      expenses.map((expense) => expense.receipt_path)
+    );
+    return expenses.map((expense) => ({
+      ...expense,
+      receipt_url: signedUrls.get(expense.receipt_path ?? "") ?? null,
+    }));
   }
 );
 
@@ -48,7 +57,17 @@ export const getExpenseById = cache(
       .maybeSingle();
 
     if (error) throw new Error(error.message);
-    return data as Expense | null;
+    const expense = data as Expense | null;
+    if (!expense) return null;
+    const signedUrls = await createSignedUrlMap(
+      supabase,
+      "expense-receipts",
+      [expense.receipt_path]
+    );
+    return {
+      ...expense,
+      receipt_url: signedUrls.get(expense.receipt_path ?? "") ?? null,
+    };
   }
 );
 

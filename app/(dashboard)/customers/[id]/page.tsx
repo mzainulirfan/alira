@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { verifySession } from "@/lib/auth/dal";
 import { getCustomerById } from "@/lib/data/customers";
 import { getCustomerDetail } from "@/lib/data/customer-detail";
-import { getActiveTariff, currentPeriod } from "@/lib/data/bills";
+import { getActiveTariff } from "@/lib/data/bills";
+import { currentPeriod } from "@/lib/period";
 import { CustomerDetailClient } from "./customer-detail-client";
 import { canManageCustomers, canManageFinance } from "@/lib/staff";
 
@@ -39,6 +40,7 @@ export default async function CustomerDetailPage({
       canChangeStatus={session.role === "admin"}
       canRecordMeter={session.role !== "treasurer"}
       canRecordPayment={canManageFinance(session.role)}
+      canManageQr={session.role === "admin"}
     />
   );
 }

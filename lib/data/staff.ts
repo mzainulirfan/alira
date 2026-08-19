@@ -7,7 +7,7 @@ import { ADMIN_ROLES } from "@/lib/staff";
 import type { StaffProfile } from "@/lib/types";
 
 const STAFF_COLUMNS =
-  "id, username, name, role, status, must_change_passcode, failed_attempts, locked_until, last_login_at, created_at, updated_at";
+  "id, username, name, role, status, session_epoch, must_change_passcode, failed_attempts, locked_until, last_login_at, created_at, updated_at";
 
 export const getStaffProfiles = cache(async (): Promise<StaffProfile[]> => {
   await requireRole(ADMIN_ROLES);

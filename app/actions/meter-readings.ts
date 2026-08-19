@@ -1,11 +1,22 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { assertRole } from "@/lib/auth/dal";
+import { assertRole, verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { getImageExtension, hasValidImageSignature } from "@/lib/image-upload";
 import { METER_ROLES } from "@/lib/staff";
+import { parseCustomerQrPayload } from "@/lib/customer-qr";
+import { isValidPeriod, periodToDate } from "@/lib/period";
+import {
+  createSignedUrlMap,
+  ensurePrivateBucket,
+  removeStorageObjects,
+} from "@/lib/storage";
+import type { Bill, Customer, MeterReading } from "@/lib/types";
 
 const METER_PHOTOS_BUCKET = "meter-photos";
+const MAX_METER_PHOTO_SIZE = 5 * 1024 * 1024;
 
 export type SaveReadingState = {
   error?: string;
@@ -21,14 +32,79 @@ export type CancelReadingState = {
   billDeleted?: boolean;
 };
 
-async function ensureBucket(supabase: ReturnType<typeof createSupabaseAdmin>) {
-  const { data } = await supabase.storage.getBucket(METER_PHOTOS_BUCKET);
-  if (data) return;
+export type ResolveMeterScanResult = {
+  error?: string;
+  customer?: Customer;
+  reading?: MeterReading | null;
+  previousReading?: number;
+  billStatus?: Bill["status"] | null;
+};
 
-  const { error } = await supabase.storage.createBucket(METER_PHOTOS_BUCKET, {
-    public: true,
-  });
-  if (error) throw new Error(`Gagal menyiapkan penyimpanan foto: ${error.message}`);
+export async function resolveMeterScanAction(
+  rawCode: string,
+  period: string
+): Promise<ResolveMeterScanResult> {
+  await verifySession();
+  const customerNumber = parseCustomerQrPayload(rawCode);
+  if (!customerNumber) {
+    return { error: "Kode bukan QR Alira atau formatnya tidak valid." };
+  }
+  if (!isValidPeriod(period)) {
+    return { error: "Periode pencatatan tidak valid." };
+  }
+
+  const supabase = createSupabaseAdmin();
+  const { data: customer, error: customerError } = await supabase
+    .from("pam_customers")
+    .select("*")
+    .eq("customer_number", customerNumber)
+    .maybeSingle();
+  if (customerError) return { error: customerError.message };
+  if (!customer) return { error: "Pelanggan dari kode ini tidak ditemukan." };
+  if (customer.status !== "active") return { error: "Pelanggan ini sudah tidak aktif." };
+
+  const periodDate = periodToDate(period);
+  const [readingResult, previousResult, billResult] = await Promise.all([
+    supabase
+      .from("pam_meter_readings")
+      .select("*")
+      .eq("customer_id", customer.id)
+      .eq("period", periodDate)
+      .maybeSingle(),
+    supabase
+      .from("pam_meter_readings")
+      .select("current_reading")
+      .eq("customer_id", customer.id)
+      .lt("period", periodDate)
+      .order("period", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("pam_bills")
+      .select("status")
+      .eq("customer_id", customer.id)
+      .eq("period", periodDate)
+      .maybeSingle(),
+  ]);
+
+  const error = readingResult.error ?? previousResult.error ?? billResult.error;
+  if (error) return { error: error.message };
+
+  const reading = readingResult.data as MeterReading | null;
+  const signedUrls = await createSignedUrlMap(
+    supabase,
+    METER_PHOTOS_BUCKET,
+    [reading?.photo_path ?? null]
+  );
+
+  return {
+    customer: customer as Customer,
+    reading: reading
+      ? { ...reading, photo_url: signedUrls.get(reading.photo_path ?? "") ?? null }
+      : null,
+    previousReading: Number(previousResult.data?.current_reading ?? 0),
+    billStatus: (billResult.data?.status as Bill["status"] | undefined) ?? null,
+  };
 }
 
 export async function saveReadingAction(
@@ -41,14 +117,13 @@ export async function saveReadingAction(
   const readingId = formData.get("reading_id");
   const period = formData.get("period");
   const currentReadingRaw = formData.get("current_reading");
-  const previousReadingRaw = formData.get("previous_reading");
   const photo = formData.get("photo");
   const revisionReason = formData.get("revision_reason");
 
   if (typeof customerId !== "string" || !customerId) {
     return { error: "Pelanggan tidak valid." };
   }
-  if (typeof period !== "string" || !/^\d{4}-\d{2}$/.test(period)) {
+  if (!isValidPeriod(period)) {
     return { error: "Periode tidak valid." };
   }
   const isRevision = typeof readingId === "string" && readingId.length > 0;
@@ -59,88 +134,65 @@ export async function saveReadingAction(
     return { error: "Alasan revisi minimal 3 karakter." };
   }
 
-  const previousReading = Number(previousReadingRaw);
   const currentReading = Number(currentReadingRaw);
   if (!Number.isFinite(currentReading) || currentReading < 0) {
     return { error: "Angka meter sekarang tidak valid." };
   }
-  if (currentReading < previousReading) {
-    return {
-      error:
-        "Meter sekarang tidak boleh lebih kecil dari meter sebelumnya (" +
-        previousReading +
-        ").",
-    };
+  const next = formData.get("next") === "true";
+  const hasNewPhoto = photo instanceof File && photo.size > 0;
+  if (hasNewPhoto) {
+    const extension = getImageExtension(photo.type);
+    if (!extension) {
+      return { error: "Foto meter harus berupa file JPEG, PNG, atau WebP." };
+    }
+    if (photo.size > MAX_METER_PHOTO_SIZE) {
+      return { error: "Ukuran foto meter maksimal 5 MB." };
+    }
+    if (!(await hasValidImageSignature(photo))) {
+      return { error: "Isi file foto meter tidak valid." };
+    }
   }
 
-  const usage = currentReading - previousReading;
-  const next = formData.get("next") === "true";
   const supabase = createSupabaseAdmin();
+  let uploadedPhotoPath: string | null = null;
+
+  async function removeUploadedPhoto() {
+    if (!uploadedPhotoPath) return;
+    await removeStorageObjects(supabase, METER_PHOTOS_BUCKET, [uploadedPhotoPath]);
+  }
 
   try {
     if (isRevision) {
       const { data: existingReading, error: readingError } = await supabase
         .from("pam_meter_readings")
-        .select("id, customer_id, period, previous_reading")
+        .select("id, customer_id, period")
         .eq("id", readingId)
         .maybeSingle();
       if (readingError) return { error: readingError.message };
       if (
         !existingReading ||
         existingReading.customer_id !== customerId ||
-        existingReading.period !== `${period}-01`
+        existingReading.period !== periodToDate(period)
       ) {
         return { error: "Pencatatan meter tidak ditemukan." };
       }
-      if (currentReading < Number(existingReading.previous_reading)) {
-        return {
-          error: "Meter sekarang tidak boleh lebih kecil dari meter sebelumnya.",
-        };
-      }
-
-      const { data: bill, error: billError } = await supabase
-        .from("pam_bills")
-        .select("id, status")
-        .eq("meter_reading_id", readingId)
-        .maybeSingle();
-      if (billError) return { error: billError.message };
-      if (bill?.status === "paid") {
-        return {
-          error: "Pencatatan tidak dapat direvisi karena tagihan sudah dibayar.",
-        };
-      }
-      if (bill) {
-        const { data: payment, error: paymentError } = await supabase
-          .from("pam_payments")
-          .select("id")
-          .eq("bill_id", bill.id)
-          .limit(1)
-          .maybeSingle();
-        if (paymentError) return { error: paymentError.message };
-        if (payment) {
-          return {
-            error: "Pencatatan tidak dapat direvisi karena pembayaran sudah tercatat.",
-          };
-        }
-      }
     }
 
-    let photoUrl: string | null = null;
-    const hasNewPhoto = photo instanceof File && photo.size > 0;
+    let photoPath: string | null = null;
     if (hasNewPhoto) {
-      await ensureBucket(supabase);
-      const path = `${period}/${customerId}.jpg`;
+      await ensurePrivateBucket(supabase, METER_PHOTOS_BUCKET);
+      uploadedPhotoPath =
+        `${period}/${customerId}/${randomUUID()}.` +
+        getImageExtension(photo.type);
       const { error: uploadError } = await supabase.storage
         .from(METER_PHOTOS_BUCKET)
-        .upload(path, photo, { upsert: true, contentType: photo.type });
+        .upload(uploadedPhotoPath, photo, { upsert: false, contentType: photo.type });
 
       if (uploadError) {
+        uploadedPhotoPath = null;
         return { error: `Gagal mengunggah foto: ${uploadError.message}` };
       }
-      const { data: urlData } = supabase.storage
-        .from(METER_PHOTOS_BUCKET)
-        .getPublicUrl(path);
-      photoUrl = urlData.publicUrl;
+      photoPath = uploadedPhotoPath;
     }
 
     if (isRevision) {
@@ -154,45 +206,65 @@ export async function saveReadingAction(
       const { data, error } = await supabase.rpc("pam_revise_meter_reading", {
         p_reading_id: readingId,
         p_current_reading: currentReading,
-        p_photo_url: photoUrl,
+        p_photo_url: photoPath,
         p_replace_photo: hasNewPhoto,
         p_reason: (revisionReason as string).trim(),
         p_actor: session.userId,
         p_fallback_price_per_m3: tariff?.price_per_m3 ?? 0,
       });
-      if (error) return { error: error.message };
-      const result = data as { usage?: number; bill_updated?: boolean } | null;
+      if (error) {
+        await removeUploadedPhoto();
+        return { error: error.message };
+      }
+      const result = data as {
+        usage?: number;
+        bill_updated?: boolean;
+        previous_photo_path?: string | null;
+      } | null;
+      const committedPhotoPath = uploadedPhotoPath;
+      uploadedPhotoPath = null;
+      if (result?.previous_photo_path && committedPhotoPath) {
+        await removeStorageObjects(
+          supabase,
+          METER_PHOTOS_BUCKET,
+          [result.previous_photo_path]
+        );
+      }
       revalidatePath("/meter-readings");
       revalidatePath("/bills");
       revalidatePath("/dashboard");
+      revalidatePath("/reports");
+      revalidatePath(`/customers/${customerId}`);
       return {
         success: true,
-        usage: Number(result?.usage ?? usage),
+        usage: Number(result?.usage ?? 0),
         billUpdated: result?.bill_updated === true,
       };
     }
 
-    const { error } = await supabase.from("pam_meter_readings").insert({
-        customer_id: customerId,
-        period: `${period}-01`,
-        previous_reading: previousReading,
-        current_reading: currentReading,
-        usage,
-        photo_url: photoUrl,
-        recorded_by: session.userId,
-        recorded_at: new Date().toISOString(),
-      });
+    const { data, error } = await supabase.rpc("pam_create_meter_reading", {
+      p_customer_id: customerId,
+      p_period: periodToDate(period),
+      p_current_reading: currentReading,
+      p_photo_url: photoPath,
+      p_actor: session.userId,
+    });
 
     if (error) {
+      await removeUploadedPhoto();
       return { error: `Gagal menyimpan pencatatan: ${error.message}` };
     }
+    const result = data as { usage?: number } | null;
+    uploadedPhotoPath = null;
+    revalidatePath("/meter-readings");
+    revalidatePath("/dashboard");
+    revalidatePath("/reports");
+    revalidatePath(`/customers/${customerId}`);
+    return { success: true, usage: Number(result?.usage ?? 0), next };
   } catch (e) {
+    await removeUploadedPhoto();
     return { error: e instanceof Error ? e.message : "Gagal menyimpan pencatatan." };
   }
-
-  revalidatePath("/meter-readings");
-  revalidatePath("/dashboard");
-  return { success: true, usage, next };
 }
 
 export async function cancelReadingAction(
@@ -216,10 +288,17 @@ export async function cancelReadingAction(
     p_actor: session.userId,
   });
   if (error) return { error: error.message };
+  const result = data as {
+    bill_deleted?: boolean;
+    photo_path?: string | null;
+  } | null;
+  if (result?.photo_path) {
+    await removeStorageObjects(supabase, METER_PHOTOS_BUCKET, [result.photo_path]);
+  }
 
-  const result = data as { bill_deleted?: boolean } | null;
   revalidatePath("/meter-readings");
   revalidatePath("/bills");
   revalidatePath("/dashboard");
+  revalidatePath("/reports");
   return { success: true, billDeleted: result?.bill_deleted === true };
 }

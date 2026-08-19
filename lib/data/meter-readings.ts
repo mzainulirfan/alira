@@ -3,6 +3,8 @@ import "server-only";
 import { cache } from "react";
 import { verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { dateToPeriod, periodToDate } from "@/lib/period";
+import { createSignedUrlMap } from "@/lib/storage";
 import type { Bill, Customer, MeterReading } from "@/lib/types";
 
 export type ReadingWithCustomer = {
@@ -12,19 +14,6 @@ export type ReadingWithCustomer = {
   previousPeriod: string | null;
   billStatus: Bill["status"] | null;
 };
-
-export function periodToDate(period: string): string {
-  return `${period}-01`;
-}
-
-export function dateToPeriod(date: string): string {
-  return date.slice(0, 7);
-}
-
-export function currentPeriod(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
 
 export const getActiveCustomers = cache(async (): Promise<Customer[]> => {
   await verifySession();
@@ -51,7 +40,25 @@ export const getPeriodReadings = cache(
       .eq("period", periodToDate(period));
 
     if (error) throw new Error(error.message);
-    return (data ?? []) as MeterReading[];
+    const readings = (data ?? []) as MeterReading[];
+    const invalidReading = readings.find(
+      (reading) =>
+        reading.previous_reading < 0 ||
+        reading.current_reading < reading.previous_reading ||
+        reading.usage !== reading.current_reading - reading.previous_reading
+    );
+    if (invalidReading) {
+      throw new Error("Data pencatatan meter lama tidak konsisten dan perlu diperbaiki.");
+    }
+    const signedUrls = await createSignedUrlMap(
+      supabase,
+      "meter-photos",
+      readings.map((reading) => reading.photo_path)
+    );
+    return readings.map((reading) => ({
+      ...reading,
+      photo_url: signedUrls.get(reading.photo_path ?? "") ?? null,
+    }));
   }
 );
 
@@ -94,6 +101,7 @@ export const getCustomerReadingStatus = cache(
             .from("pam_meter_readings")
             .select("*")
             .in("customer_id", ids)
+            .lt("period", periodToDate(period))
             .order("period", { ascending: false })
         )
       );

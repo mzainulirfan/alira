@@ -1,6 +1,6 @@
 import { verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
-import { currentPeriod, periodToDate } from "@/lib/data/meter-readings";
+import { currentPeriod, isValidPeriod, nextPeriodDate, periodToDate } from "@/lib/period";
 import { getAppSettings } from "@/lib/data/settings";
 import { DashboardSummary, type ActivityItem } from "@/components/dashboard/dashboard-summary";
 import { formatCurrency, formatMeter } from "@/lib/format";
@@ -14,11 +14,6 @@ export const metadata = {
   title: "Dashboard",
 };
 
-function nextPeriodDate(period: string): string {
-  const [year, month] = period.split("-").map(Number);
-  return new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
-}
-
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -27,7 +22,7 @@ export default async function DashboardPage({
   const session = await verifySession();
 
   const sp = await searchParams;
-  const period = /^\d{4}-\d{2}$/.test(sp.period ?? "") ? sp.period! : currentPeriod();
+  const period = isValidPeriod(sp.period) ? sp.period : currentPeriod();
   const periodDate = periodToDate(period);
   const nextPeriod = nextPeriodDate(period);
 

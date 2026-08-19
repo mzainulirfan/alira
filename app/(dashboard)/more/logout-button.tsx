@@ -16,6 +16,21 @@ import { ConfirmationDialogHeader } from "@/components/ui/confirmation-dialog";
 export function LogoutButton() {
   const [open, setOpen] = useState(false);
 
+  async function clearCachesAndLogout() {
+    try {
+      if ("caches" in window) {
+        const names = await caches.keys();
+        await Promise.all(
+          names
+            .filter((name) => name.startsWith("alira-"))
+            .map((name) => caches.delete(name))
+        );
+      }
+    } finally {
+      await logoutAction();
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
@@ -40,7 +55,7 @@ export function LogoutButton() {
           <Button variant="outline" onClick={() => setOpen(false)}>
             Batal
           </Button>
-           <form action={logoutAction} className="w-full sm:w-auto">
+           <form action={clearCachesAndLogout} className="w-full sm:w-auto">
              <Button type="submit" variant="destructive" className="w-full">
               Keluar
             </Button>

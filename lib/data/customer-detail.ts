@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { verifySession } from "@/lib/auth/dal";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { createSignedUrlMap } from "@/lib/storage";
 import type { Bill, MeterReading } from "@/lib/types";
 
 export const getCustomerDetail = cache(async (customerId: string) => {
@@ -24,7 +25,16 @@ export const getCustomerDetail = cache(async (customerId: string) => {
       .limit(12),
   ]);
 
-  const readings = (readingsRes.data ?? []) as MeterReading[];
+  const rawReadings = (readingsRes.data ?? []) as MeterReading[];
+  const signedUrls = await createSignedUrlMap(
+    supabase,
+    "meter-photos",
+    rawReadings.map((reading) => reading.photo_path)
+  );
+  const readings = rawReadings.map((reading) => ({
+    ...reading,
+    photo_url: signedUrls.get(reading.photo_path ?? "") ?? null,
+  }));
   const bills = (billsRes.data ?? []) as Bill[];
 
   return {

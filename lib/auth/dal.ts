@@ -22,7 +22,7 @@ export const verifySession = cache(async (): Promise<VerifiedSession> => {
   const { data: profile, error } = await supabase
     .from("pam_profiles")
     .select(
-      "id, username, name, role, status, must_change_passcode, failed_attempts, locked_until, last_login_at, created_at, updated_at"
+      "id, username, name, role, status, session_epoch, must_change_passcode, failed_attempts, locked_until, last_login_at, created_at, updated_at"
     )
     .eq("id", session.userId)
     .maybeSingle();
@@ -31,7 +31,8 @@ export const verifySession = cache(async (): Promise<VerifiedSession> => {
     error ||
     !profile ||
     profile.status !== "active" ||
-    !isStaffRole(profile.role)
+    !isStaffRole(profile.role) ||
+    profile.session_epoch !== session.sessionEpoch
   ) {
     redirect("/login?reset=true");
   }

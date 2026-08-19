@@ -1,7 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const protectedRoutes = ["/dashboard"];
+const protectedRoutes = [
+  "/dashboard",
+  "/customers",
+  "/meter-readings",
+  "/bills",
+  "/payments",
+  "/expenses",
+  "/reports",
+  "/more",
+];
 const publicRoutes = ["/login"];
+
+function disableCaching(response: NextResponse): NextResponse {
+  response.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate");
+  return response;
+}
 
 export default async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -20,22 +34,24 @@ export default async function proxy(request: NextRequest) {
   if (shouldResetSession) {
     const response = NextResponse.next();
     response.cookies.delete("pam_session");
-    return response;
+    return disableCaching(response);
   }
 
   if (isProtectedRoute && !hasSession) {
     const url = new URL("/login", request.url);
     url.searchParams.set("next", path);
-    return NextResponse.redirect(url);
+    return disableCaching(NextResponse.redirect(url));
   }
 
   if (isPublicRoute && hasSession) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return disableCaching(NextResponse.redirect(new URL("/dashboard", request.url)));
   }
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-pathname", path);
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  return disableCaching(
+    NextResponse.next({ request: { headers: requestHeaders } })
+  );
 }
 
 export const config = {
