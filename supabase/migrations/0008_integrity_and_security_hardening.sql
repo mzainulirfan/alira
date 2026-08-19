@@ -20,33 +20,79 @@ update storage.buckets
 set public = false
 where id in ('meter-photos', 'expense-receipts');
 
-alter table public.pam_profiles
-  add constraint pam_profiles_failed_attempts_nonnegative
-  check (failed_attempts >= 0) not valid;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'pam_profiles_failed_attempts_nonnegative'
+      and conrelid = 'public.pam_profiles'::regclass
+  ) then
+    alter table public.pam_profiles
+      add constraint pam_profiles_failed_attempts_nonnegative
+      check (failed_attempts >= 0) not valid;
+  end if;
+end;
+$$;
 
-alter table public.pam_meter_readings
-  add constraint pam_meter_readings_month_period_check
-  check (period = date_trunc('month', period::timestamp)::date) not valid;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'pam_meter_readings_month_period_check'
+      and conrelid = 'public.pam_meter_readings'::regclass
+  ) then
+    alter table public.pam_meter_readings
+      add constraint pam_meter_readings_month_period_check
+      check (period = date_trunc('month', period::timestamp)::date) not valid;
+  end if;
+end;
+$$;
 
-alter table public.pam_meter_readings
-  add constraint pam_meter_readings_values_check
-  check (
-    previous_reading >= 0
-    and current_reading >= previous_reading
-    and usage = current_reading - previous_reading
-  ) not valid;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'pam_meter_readings_values_check'
+      and conrelid = 'public.pam_meter_readings'::regclass
+  ) then
+    alter table public.pam_meter_readings
+      add constraint pam_meter_readings_values_check
+      check (
+        previous_reading >= 0
+        and current_reading >= previous_reading
+        and usage = current_reading - previous_reading
+      ) not valid;
+  end if;
+end;
+$$;
 
-alter table public.pam_payments
-  add constraint pam_payments_amount_positive_check
-  check (amount > 0) not valid;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'pam_payments_amount_positive_check'
+      and conrelid = 'public.pam_payments'::regclass
+  ) then
+    alter table public.pam_payments
+      add constraint pam_payments_amount_positive_check
+      check (amount > 0) not valid;
+  end if;
+end;
+$$;
 
 do $$
 begin
   if not exists (
     select 1 from public.pam_profiles where failed_attempts < 0
   ) then
-    alter table public.pam_profiles
-      validate constraint pam_profiles_failed_attempts_nonnegative;
+    if exists (
+      select 1 from pg_constraint
+      where conname = 'pam_profiles_failed_attempts_nonnegative'
+        and conrelid = 'public.pam_profiles'::regclass
+    ) then
+      alter table public.pam_profiles
+        validate constraint pam_profiles_failed_attempts_nonnegative;
+    end if;
   end if;
 
   if not exists (
@@ -54,8 +100,14 @@ begin
     from public.pam_meter_readings
     where period <> date_trunc('month', period::timestamp)::date
   ) then
-    alter table public.pam_meter_readings
-      validate constraint pam_meter_readings_month_period_check;
+    if exists (
+      select 1 from pg_constraint
+      where conname = 'pam_meter_readings_month_period_check'
+        and conrelid = 'public.pam_meter_readings'::regclass
+    ) then
+      alter table public.pam_meter_readings
+        validate constraint pam_meter_readings_month_period_check;
+    end if;
   end if;
 
   if not exists (
@@ -65,15 +117,27 @@ begin
       or current_reading < previous_reading
       or usage <> current_reading - previous_reading
   ) then
-    alter table public.pam_meter_readings
-      validate constraint pam_meter_readings_values_check;
+    if exists (
+      select 1 from pg_constraint
+      where conname = 'pam_meter_readings_values_check'
+        and conrelid = 'public.pam_meter_readings'::regclass
+    ) then
+      alter table public.pam_meter_readings
+        validate constraint pam_meter_readings_values_check;
+    end if;
   end if;
 
   if not exists (
     select 1 from public.pam_payments where amount <= 0
   ) then
-    alter table public.pam_payments
-      validate constraint pam_payments_amount_positive_check;
+    if exists (
+      select 1 from pg_constraint
+      where conname = 'pam_payments_amount_positive_check'
+        and conrelid = 'public.pam_payments'::regclass
+    ) then
+      alter table public.pam_payments
+        validate constraint pam_payments_amount_positive_check;
+    end if;
   end if;
 
   if not exists (
