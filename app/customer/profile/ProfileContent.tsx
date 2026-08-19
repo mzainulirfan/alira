@@ -106,6 +106,7 @@ function PasscodeInput({
               const digit = e.target.value.replace(/\D/g, "").slice(-1);
               const next = [...digits];
               next[i] = digit;
+              setDigits(next);
               if (digit && i < DIGIT_COUNT - 1) {
                 document.getElementById(`${prefix}-${i + 1}`)?.focus();
               }
@@ -114,6 +115,9 @@ function PasscodeInput({
               if (e.key === "Backspace") {
                 e.preventDefault();
                 if (i > 0) {
+                  const next = [...digits];
+                  next[i] = "";
+                  setDigits(next);
                   document.getElementById(`${prefix}-${i - 1}`)?.focus();
                 } else {
                   const next = [...digits];
