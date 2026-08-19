@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -10,6 +10,8 @@ import {
   ArrowRight01Icon,
   MagicWand01Icon,
   CheckmarkCircle01Icon,
+  FilterIcon,
+  FilterResetIcon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ import {
 } from "@/components/ui/confirmation-dialog";
 import { generateBillsAction, type GenerateBillsState } from "@/app/actions/bills";
 import { formatCurrency, formatMeter, formatShortPeriod } from "@/lib/format";
+import { currentPeriod } from "@/lib/period";
 import type { BillWithCustomer } from "@/lib/data/bills";
 import type { Tariff } from "@/lib/types";
 
@@ -82,12 +85,24 @@ export function BillsClient({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const filterRef = useRef<HTMLDivElement>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [state, formAction, pending] = useActionState(
     generateBillsAction,
     { created: 0, skipped: 0 } satisfies GenerateBillsState
   );
   const [lastState, setLastState] = useState(state);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const pendingCount = Math.max(0, readingCount - allBills.length);
   const overdueCount = allBills.filter((b) => b.status === "overdue").length;
@@ -150,34 +165,91 @@ export function BillsClient({
 
       <div className="flex flex-wrap items-center gap-2">
         <PeriodPicker period={period} basePath="/bills" />
-        <select
-          value={status}
-          onChange={(event) => updateParams({ status: event.target.value })}
-          aria-label="Filter status tagihan"
-          className="h-8 min-w-0 flex-1 rounded-lg border border-border bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:max-w-56"
-        >
-          {STATUS_FILTERS.map((filter) => (
-            <option key={filter.key} value={filter.key}>
-              {filter.label} ({counts[filter.key as keyof typeof counts]})
-            </option>
-          ))}
-        </select>
-        {customerName && (
-          <div className="flex h-8 min-w-0 items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 pr-1 pl-2.5">
-            <p className="truncate text-xs text-muted-foreground">
-              Pelanggan: <span className="font-medium text-foreground">{customerName}</span>
-            </p>
-            <Button variant="ghost" size="xs" onClick={clearCustomerFilter}>
-              Hapus
-            </Button>
+        <div ref={filterRef} className="relative ml-auto">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Filter status tagihan"
+            aria-haspopup="listbox"
+            aria-expanded={filterOpen}
+            onClick={() => setFilterOpen((open) => !open)}
+          >
+            <HugeiconsIcon icon={FilterIcon} />
+            {(status !== "all" || customerId !== null) && (
+              <span className="absolute top-1 right-1 size-2 rounded-full bg-primary" />
+            )}
+          </Button>
+          {filterOpen && (
+            <div
+              role="listbox"
+              className="absolute right-0 z-50 mt-2 min-w-44 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md"
+            >
+              {STATUS_FILTERS.map((filter) => {
+                const active = status === filter.key;
+                return (
+                  <button
+                    key={filter.key}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => {
+                      updateParams({ status: filter.key });
+                      setFilterOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                  >
+                    <span>{filter.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {counts[filter.key as keyof typeof counts]}
+                    </span>
+                    {active && (
+                      <HugeiconsIcon
+                        icon={CheckmarkCircle01Icon}
+                        className="size-4 text-primary"
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground">
+              {status !== "all"
+                ? `Menampilkan ${bills.length} dari ${counts[status as keyof typeof counts]} tagihan`
+                : `Menampilkan ${bills.length} tagihan`}
+            </span>
+            {period !== currentPeriod() && (
+              <Badge variant="secondary">{formatShortPeriod(period)}</Badge>
+            )}
+            {status !== "all" && (
+              <Badge variant="secondary">
+                {STATUS_FILTERS.find((filter) => filter.key === status)?.label}
+              </Badge>
+            )}
+            {customerName && (
+              <div className="flex h-6 items-center gap-1 rounded-md border border-primary/20 bg-primary/5 pl-2 pr-1">
+                <p className="truncate text-xs text-muted-foreground">
+                  {customerName}
+                </p>
+                <Button variant="ghost" size="xs" onClick={clearCustomerFilter}>
+                  Hapus
+                </Button>
+              </div>
+            )}
           </div>
-        )}
-        {hasActiveFilters && (
-          <Button variant="outline" size="sm" onClick={resetFilters}>
+          <Button variant="ghost" size="sm" onClick={resetFilters}>
+            <HugeiconsIcon icon={FilterResetIcon} />
             Reset Filter
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {canManage && !customerId && pendingCount > 0 && (
         <GenerateBillCard

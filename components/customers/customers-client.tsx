@@ -10,6 +10,9 @@ import {
   UserGroupIcon,
   ArrowRight01Icon,
   ArrowDown01Icon,
+  FilterIcon,
+  FilterResetIcon,
+  CheckmarkCircle01Icon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,9 +48,21 @@ export function CustomersClient({
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(query);
   const inputRef = useRef<HTMLInputElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [customers, setCustomers] = useState(initialCustomers);
   const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const [loadingMore, setLoadingMore] = useState(false);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const [prevPage, setPrevPage] = useState({
     customers: initialCustomers,
@@ -159,24 +174,79 @@ export function CustomersClient({
             </button>
           )}
         </div>
-        <select
-          value={status}
-          onChange={(event) => updateParams({ status: event.target.value })}
-          aria-label="Filter status pelanggan"
-          className="h-8 min-w-0 flex-1 rounded-lg border border-border bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:max-w-52"
-        >
-          {STATUS_TABS.map((tab) => (
-            <option key={tab.key} value={tab.key}>
-              {tab.label} ({counts[tab.key as keyof typeof counts]})
-            </option>
-          ))}
-        </select>
-        {hasActiveFilters && (
-          <Button variant="outline" size="sm" onClick={resetFilters}>
+        <div ref={filterRef} className="relative">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Filter status pelanggan"
+            aria-haspopup="listbox"
+            aria-expanded={filterOpen}
+            onClick={() => setFilterOpen((open) => !open)}
+          >
+            <HugeiconsIcon icon={FilterIcon} />
+            {status !== "all" && (
+              <span className="absolute top-1 right-1 size-2 rounded-full bg-primary" />
+            )}
+          </Button>
+          {filterOpen && (
+            <div
+              role="listbox"
+              className="absolute right-0 z-50 mt-2 min-w-44 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md"
+            >
+              {STATUS_TABS.map((tab) => {
+                const active = status === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => {
+                      updateParams({ status: tab.key });
+                      setFilterOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                  >
+                    <span>{tab.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {counts[tab.key as keyof typeof counts]}
+                    </span>
+                    {active && (
+                      <HugeiconsIcon
+                        icon={CheckmarkCircle01Icon}
+                        className="size-4 text-primary"
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground">
+              {query
+                ? `Menampilkan ${customers.length} hasil`
+                : `Menampilkan ${customers.length} dari ${counts[status as keyof typeof counts]} pelanggan`}
+            </span>
+            {status !== "all" && (
+              <Badge variant="secondary">
+                {STATUS_TABS.find((tab) => tab.key === status)?.label}
+              </Badge>
+            )}
+            {query && <Badge variant="secondary">“{query}”</Badge>}
+          </div>
+          <Button variant="ghost" size="sm" onClick={resetFilters}>
+            <HugeiconsIcon icon={FilterResetIcon} />
             Reset Filter
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {customers.length === 0 ? (
         <EmptyState

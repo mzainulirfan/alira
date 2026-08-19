@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -9,10 +9,14 @@ import {
   BanknoteArrowUpIcon,
   Delete01Icon,
   Download01Icon,
+  FilterIcon,
+  FilterResetIcon,
+  CheckmarkCircle01Icon,
 } from "@hugeicons/core-free-icons";
 import { deleteExpenseAction } from "@/app/actions/expenses";
 import { ExpenseForm } from "@/components/expenses/expense-form";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -29,7 +33,8 @@ import {
   EXPENSE_CATEGORY_LABEL,
   EXPENSE_PAYMENT_METHOD_LABEL,
 } from "@/lib/expenses";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, formatShortPeriod } from "@/lib/format";
+import { currentPeriod } from "@/lib/period";
 import type { Expense, ExpenseCategory } from "@/lib/types";
 
 export function ExpensesClient({
@@ -49,12 +54,24 @@ export function ExpensesClient({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const filterRef = useRef<HTMLDivElement>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
   const initialOpen = searchParams.get("new") === "true";
   const currentMonth = new Date().toISOString().slice(0, 7);
   const defaultDate =
     currentMonth === period
       ? new Date().toISOString().slice(0, 10)
       : `${period}-01`;
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const counts = Object.fromEntries(
     EXPENSE_CATEGORIES.map((item) => [
@@ -142,25 +159,71 @@ export function ExpensesClient({
 
       <div className="flex flex-wrap items-center gap-2">
         <PeriodPicker period={period} basePath="/expenses" />
-        <select
-          value={category ?? "all"}
-          onChange={(event) =>
-            updateCategory(
-              event.target.value === "all"
-                ? null
-                : (event.target.value as ExpenseCategory)
-            )
-          }
-          aria-label="Filter kategori pengeluaran"
-          className="h-8 min-w-0 flex-1 rounded-lg border border-border bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:max-w-64"
-        >
-          <option value="all">Semua kategori ({allExpenses.length})</option>
-          {EXPENSE_CATEGORIES.map((item) => (
-            <option key={item.key} value={item.key}>
-              {item.label} ({counts[item.key]})
-            </option>
-          ))}
-        </select>
+        <div ref={filterRef} className="relative ml-auto">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Filter kategori pengeluaran"
+            aria-haspopup="listbox"
+            aria-expanded={filterOpen}
+            onClick={() => setFilterOpen((open) => !open)}
+          >
+            <HugeiconsIcon icon={FilterIcon} />
+            {category && (
+              <span className="absolute top-1 right-1 size-2 rounded-full bg-primary" />
+            )}
+          </Button>
+          {filterOpen && (
+            <div
+              role="listbox"
+              className="absolute right-0 z-50 mt-2 min-w-48 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md"
+            >
+              <button
+                type="button"
+                role="option"
+                aria-selected={category === null}
+                onClick={() => {
+                  updateCategory(null);
+                  setFilterOpen(false);
+                }}
+                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+              >
+                <span>Semua kategori</span>
+                <span className="text-xs text-muted-foreground">
+                  {allExpenses.length}
+                </span>
+                {category === null && (
+                  <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4 text-primary" />
+                )}
+              </button>
+              {EXPENSE_CATEGORIES.map((item) => {
+                const active = category === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => {
+                      updateCategory(item.key);
+                      setFilterOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                  >
+                    <span>{item.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {counts[item.key]}
+                    </span>
+                    {active && (
+                      <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-4 text-primary" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         {expenses.length > 0 && (
           <Button
             variant="outline"
@@ -172,12 +235,29 @@ export function ExpensesClient({
             <span className="hidden sm:inline">CSV</span>
           </Button>
         )}
-        {hasActiveFilters && (
-          <Button variant="outline" size="sm" onClick={resetFilters}>
+      </div>
+
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground">
+              {category
+                ? `Menampilkan ${expenses.length} dari ${allExpenses.length} transaksi`
+                : `Menampilkan ${expenses.length} transaksi`}
+            </span>
+            {period !== currentPeriod() && (
+              <Badge variant="secondary">{formatShortPeriod(period)}</Badge>
+            )}
+            {category && (
+              <Badge variant="secondary">{EXPENSE_CATEGORY_LABEL[category]}</Badge>
+            )}
+          </div>
+          <Button variant="ghost" size="sm" onClick={resetFilters}>
+            <HugeiconsIcon icon={FilterResetIcon} />
             Reset Filter
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {expenses.length === 0 ? (
         <EmptyState

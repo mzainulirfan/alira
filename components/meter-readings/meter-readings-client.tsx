@@ -10,13 +10,17 @@ import {
   Cancel01Icon,
   CheckmarkCircle01Icon,
   ArrowRight01Icon,
+  FilterIcon,
+  FilterResetIcon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { PeriodPicker } from "@/components/ui/period-picker";
 import { ReadingForm, ReadingStatusBadge } from "@/components/meter-readings/reading-form";
 import { QrScanner } from "@/components/meter-readings/qr-scanner";
 import { formatMeter, formatShortPeriod } from "@/lib/format";
+import { currentPeriod } from "@/lib/period";
 import type { ReadingWithCustomer } from "@/lib/data/meter-readings";
 import type { Tariff } from "@/lib/types";
 
@@ -55,7 +59,19 @@ export function MeterReadingsClient({
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(query);
   const inputRef = useRef<HTMLInputElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
   const openedCustomerRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const pending = total - done;
 
@@ -126,19 +142,7 @@ export function MeterReadingsClient({
 
       <div className="flex flex-wrap items-center gap-2">
         <PeriodPicker period={period} basePath="/meter-readings" />
-        <select
-          value={status}
-          onChange={(event) => updateParams({ status: event.target.value })}
-          aria-label="Filter status pencatatan meter"
-          className="h-8 min-w-0 flex-1 rounded-lg border border-border bg-card px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:max-w-56"
-        >
-          {STATUS_FILTERS.map((filter) => (
-            <option key={filter.key} value={filter.key}>
-              {filter.label} ({counts[filter.key as keyof typeof counts]})
-            </option>
-          ))}
-        </select>
-        <div className="relative min-w-48 flex-1 sm:max-w-80">
+        <div className="relative min-w-48 flex-1">
           <HugeiconsIcon
             icon={Search01Icon}
             className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -162,12 +166,82 @@ export function MeterReadingsClient({
             </button>
           )}
         </div>
-        {hasActiveFilters && (
-          <Button variant="outline" size="sm" onClick={clearAllFilters}>
+        <div ref={filterRef} className="relative">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Filter status pencatatan meter"
+            aria-haspopup="listbox"
+            aria-expanded={filterOpen}
+            onClick={() => setFilterOpen((open) => !open)}
+          >
+            <HugeiconsIcon icon={FilterIcon} />
+            {status !== "pending" && (
+              <span className="absolute top-1 right-1 size-2 rounded-full bg-primary" />
+            )}
+          </Button>
+          {filterOpen && (
+            <div
+              role="listbox"
+              className="absolute right-0 z-50 mt-2 min-w-48 overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-md"
+            >
+              {STATUS_FILTERS.map((filter) => {
+                const active = status === filter.key;
+                return (
+                  <button
+                    key={filter.key}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => {
+                      updateParams({ status: filter.key });
+                      setFilterOpen(false);
+                    }}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                  >
+                    <span>{filter.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {counts[filter.key as keyof typeof counts]}
+                    </span>
+                    {active && (
+                      <HugeiconsIcon
+                        icon={CheckmarkCircle01Icon}
+                        className="size-4 text-primary"
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground">
+              {query
+                ? `Menampilkan ${rows.length} hasil`
+                : `Menampilkan ${rows.length} dari ${counts[status as keyof typeof counts]} pelanggan`}
+            </span>
+            {period !== currentPeriod() && (
+              <Badge variant="secondary">{formatShortPeriod(period)}</Badge>
+            )}
+            {status !== "pending" && (
+              <Badge variant="secondary">
+                {STATUS_FILTERS.find((filter) => filter.key === status)?.label}
+              </Badge>
+            )}
+            {query && <Badge variant="secondary">“{query}”</Badge>}
+          </div>
+          <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+            <HugeiconsIcon icon={FilterResetIcon} />
             Reset Filter
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <EmptyState
