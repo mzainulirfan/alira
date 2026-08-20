@@ -2,7 +2,7 @@
 
 import { Menu } from "@base-ui/react/menu";
 import { useEffect, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { DropletIcon, Logout01Icon, UserIcon } from "@hugeicons/core-free-icons";
 import { getCustomerProfile, logoutCustomerAction } from "@/app/actions/customer-auth";
@@ -13,7 +13,6 @@ function getInitial(name: string | null): string {
 }
 
 export function CustomerPortalShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const router = useRouter();
   const [, startLogout] = useTransition();
   const [customerName, setCustomerName] = useState<string | null>(null);
@@ -27,10 +26,6 @@ export function CustomerPortalShell({ children }: { children: React.ReactNode })
       active = false;
     };
   }, []);
-
-  if (pathname === "/customer/login") {
-    return children;
-  }
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">

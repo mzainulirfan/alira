@@ -23,7 +23,7 @@ export const getCurrentCustomerProfile = async (): Promise<CustomerProfile> => {
 export const verifyCustomerSession = async (): Promise<VerifiedCustomerSession> => {
   const session = await getCustomerSession();
   if (!session) {
-    redirect("/customer/login?reset=true");
+    redirect("/login?reset=true");
   }
 
   const supabase = createSupabaseAdmin();
@@ -37,7 +37,7 @@ export const verifyCustomerSession = async (): Promise<VerifiedCustomerSession> 
     .maybeSingle();
 
   if (error || !profile || profile.status !== "active") {
-    redirect("/customer/login?reset=true");
+    redirect("/login?reset=true");
   }
 
   const customerProfile = profile as CustomerProfile;

@@ -12,7 +12,6 @@ const protectedRoutes = [
 ];
 const publicRoutes = ["/login"];
 const customerHomeRoute = "/customer/dashboard";
-const customerLoginRoute = "/customer/login";
 
 function disableCaching(response: NextResponse): NextResponse {
   response.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate");
@@ -31,15 +30,21 @@ export default async function proxy(request: NextRequest) {
 
   const hasSession = request.cookies.has("pam_session");
   const hasCustomerSession = request.cookies.has("customer_session");
-  const shouldResetStaffSession =
-    isPublicRoute && request.nextUrl.searchParams.get("reset") === "true";
-  const shouldResetCustomerSession =
-    path === customerLoginRoute && request.nextUrl.searchParams.get("reset") === "true";
 
-  if (shouldResetStaffSession || shouldResetCustomerSession) {
+  // Jalur lama portal pelanggan → satu halaman login
+  if (path === "/customer/login") {
+    const url = new URL("/login", request.url);
+    if (request.nextUrl.searchParams.get("reset") === "true") {
+      url.searchParams.set("reset", "true");
+    }
+    return disableCaching(NextResponse.redirect(url));
+  }
+
+  // Reset membersihkan kedua sesi
+  if (isPublicRoute && request.nextUrl.searchParams.get("reset") === "true") {
     const response = NextResponse.next();
-    if (shouldResetStaffSession) response.cookies.delete("pam_session");
-    if (shouldResetCustomerSession) response.cookies.delete("customer_session");
+    response.cookies.delete("pam_session");
+    response.cookies.delete("customer_session");
     return disableCaching(response);
   }
 

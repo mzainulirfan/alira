@@ -5,23 +5,37 @@ import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { verifyPasscode } from "@/lib/auth/passcode";
 import { createSession, deleteSession } from "@/lib/auth/session";
 import { isStaffRole, isValidUsername, normalizeUsername } from "@/lib/staff";
+import { authenticateCustomer } from "./customer-auth";
 
 export type LoginState = {
   error?: string;
+  success?: boolean;
+  redirect?: string;
 };
+
+const CUSTOMER_NUMBER_REGEX = /^PAM-\d{6}$/;
 
 export async function loginAction(
   _prevState: LoginState | undefined,
   formData: FormData
 ): Promise<LoginState> {
-  const usernameValue = formData.get("username");
+  const identifierValue = formData.get("identifier");
   const passcode = formData.get("passcode");
 
-  if (typeof usernameValue !== "string" || typeof passcode !== "string") {
+  if (typeof identifierValue !== "string" || typeof passcode !== "string") {
     return { error: "Username atau passcode salah." };
   }
 
-  const username = normalizeUsername(usernameValue);
+  const identifier = identifierValue.trim();
+
+  // Auto-detect: PAM-XXXXXX = customer, selain itu = username staff
+  if (CUSTOMER_NUMBER_REGEX.test(identifier.toUpperCase())) {
+    const result = await authenticateCustomer(identifier.toUpperCase(), passcode);
+    if (!result.success) return { error: result.error };
+    return { success: true, redirect: result.redirect };
+  }
+
+  const username = normalizeUsername(identifier);
   if (!isValidUsername(username) || !/^\d{6}$/.test(passcode)) {
     return { error: "Username atau passcode salah." };
   }
@@ -95,8 +109,11 @@ export async function loginAction(
     role: result.role,
     sessionEpoch: result.session_epoch,
   });
-  if (result.must_change_passcode) redirect("/more/security?required=true");
-  redirect("/dashboard");
+
+  return {
+    success: true,
+    redirect: result.must_change_passcode ? "/more/security?required=true" : "/dashboard",
+  };
 }
 
 export async function logoutAction() {

@@ -14,17 +14,14 @@ const CUSTOMER_NUMBER_REGEX = /^PAM-\d{6}$/;
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MINUTES = 15;
 
-type LoginResult =
+export type CustomerLoginResult =
   | { error: string; success?: false; redirect?: never; mustChangePasscode?: never }
   | { success: true; redirect: string; mustChangePasscode: boolean; error?: never };
 
-export async function loginCustomerAction(
-  _prev: LoginResult,
-  formData: FormData
-): Promise<LoginResult> {
-  const customerNumber = formData.get("customer_number")?.toString().trim().toUpperCase();
-  const passcode = formData.get("passcode")?.toString().trim();
-
+export async function authenticateCustomer(
+  customerNumber: string,
+  passcode: string
+): Promise<CustomerLoginResult> {
   if (!customerNumber || !passcode) {
     return { error: "Nomor pelanggan dan passcode wajib diisi." };
   }
@@ -130,7 +127,7 @@ async function logLoginAttempt(customerId: string, success: boolean) {
 
 export async function logoutCustomerAction() {
   await deleteCustomerSession();
-  redirect("/customer/login");
+  redirect("/login");
 }
 
 export async function changePasscodeAction(
@@ -139,7 +136,7 @@ export async function changePasscodeAction(
 ): Promise<{ error?: string; success?: boolean }> {
   const session = await getCustomerSession();
   if (!session) {
-    redirect("/customer/login?reset=true");
+    redirect("/login?reset=true");
   }
 
   const oldPasscode = formData.get("old_passcode")?.toString().trim();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
 import { loginAction, type LoginState } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,11 +13,14 @@ const DIGIT_COUNT = 6;
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, initialState);
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [digits, setDigits] = useState<string[]>(() => Array(DIGIT_COUNT).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [lastState, setLastState] = useState(state);
   const hasError = Boolean(state?.error);
+  const router = useRouter();
+
+  const isCustomerInput = /^pam/i.test(identifier.trim());
 
   if (state !== lastState) {
     setLastState(state);
@@ -30,6 +34,12 @@ export function LoginForm() {
       inputRefs.current[0]?.focus();
     }
   }, [state?.error]);
+
+  useEffect(() => {
+    if (state?.success && state?.redirect) {
+      router.replace(state.redirect);
+    }
+  }, [state?.success, state?.redirect, router]);
 
   function handleChange(index: number, value: string) {
     const digit = value.replace(/\D/g, "").slice(-1);
@@ -74,22 +84,31 @@ export function LoginForm() {
 
   return (
     <form action={action} className="flex w-full flex-col gap-4">
+      <input type="hidden" name="identifier" value={identifier} />
       <input type="hidden" name="passcode" value={digits.join("")} />
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="username">Username</Label>
+        <Label htmlFor="identifier">
+          {isCustomerInput ? "Nomor Pelanggan" : "Username"}
+        </Label>
         <Input
-          id="username"
-          name="username"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
+          id="identifier"
+          name="identifier"
+          value={identifier}
+          onChange={(event) =>
+            setIdentifier(isCustomerInput ? event.target.value.toUpperCase() : event.target.value)
+          }
+          placeholder={isCustomerInput ? "PAM-XXXXXX" : "Username"}
           autoComplete="username"
-          autoCapitalize="none"
+          autoCapitalize={isCustomerInput ? "characters" : "none"}
           spellCheck={false}
           disabled={pending}
           autoFocus
           required
         />
+        <p className="text-xs text-muted-foreground">
+          Petugas pakai username, pelanggan pakai nomor pelanggan (PAM-XXXXXX).
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">
