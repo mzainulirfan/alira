@@ -44,6 +44,7 @@ export async function authenticateCustomer(
     .maybeSingle();
 
   if (customerError) {
+    console.error("[customer-login] gagal query pam_customers:", customerError.message);
     return { error: "Terjadi kesalahan server. Coba lagi nanti." };
   }
   if (!customer) {
@@ -71,10 +72,12 @@ export async function authenticateCustomer(
         .update(updates)
         .eq("id", customer.id);
       if (updateError) {
+        console.error("[customer-login] gagal update failed_attempts:", updateError.message);
         return { error: "Terjadi kesalahan server. Coba lagi nanti." };
       }
       await logLoginAttempt(customer.id, false);
-    } catch {
+    } catch (error) {
+      console.error("[customer-login] gagal memproses login gagal:", error);
       return { error: "Terjadi kesalahan server. Coba lagi nanti." };
     }
 
@@ -96,6 +99,7 @@ export async function authenticateCustomer(
       })
       .eq("id", customer.id);
     if (updateError) {
+      console.error("[customer-login] gagal update sesi login:", updateError.message);
       return { error: "Terjadi kesalahan server. Coba lagi nanti." };
     }
 
@@ -111,7 +115,8 @@ export async function authenticateCustomer(
       : "/customer/dashboard";
 
     return { success: true, redirect: redirectUrl, mustChangePasscode: customer.must_change_passcode };
-  } catch {
+  } catch (error) {
+    console.error("[customer-login] gagal menyelesaikan login:", error);
     return { error: "Terjadi kesalahan server. Coba lagi nanti." };
   }
 }
@@ -122,7 +127,10 @@ async function logLoginAttempt(customerId: string, success: boolean) {
     customer_id: customerId,
     success,
   });
-  if (error) throw new Error("Gagal mencatat aktivitas login.");
+  if (error) {
+    console.error("[customer-login] gagal insert log login:", error.message);
+    throw new Error("Gagal mencatat aktivitas login.");
+  }
 }
 
 export async function logoutCustomerAction() {

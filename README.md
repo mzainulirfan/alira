@@ -26,9 +26,12 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SESSION_SECRET=<hasil dari: openssl rand -base64 32>
+CUSTOMER_JWT_SECRET=<hasil dari: openssl rand -base64 32>
+CUSTOMER_JWT_EXPIRY_DAYS=30
 ```
 
 - Anon key dan service role key ada di **Settings → API** di dashboard Supabase.
+- `CUSTOMER_JWT_SECRET` wajib diisi juga di **environment variable production** (mis. Vercel), bukan hanya `.env.local`, agar login pelanggan berfungsi di production.
 
 ### 3. Set passcode login
 
