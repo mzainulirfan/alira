@@ -2,8 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
-import { verifyPasscode } from "@/lib/auth/passcode";
-import { createSession, deleteSession } from "@/lib/auth/session";
+import {
+  hashPasscode,
+  isLegacyPasscodeHash,
+  verifyPasscode,
+} from "@/lib/auth/passcode";
+import { createSession, deleteSession, getSession } from "@/lib/auth/session";
 import { isStaffRole, isValidUsername, normalizeUsername } from "@/lib/staff";
 import { authenticateCustomer } from "./customer-auth";
 
@@ -59,7 +63,7 @@ export async function loginAction(
     return { error: "Akun sementara dikunci. Coba kembali beberapa menit lagi." };
   }
 
-  const valid = verifyPasscode(passcode, data.passcode_hash);
+  const valid = await verifyPasscode(passcode, data.passcode_hash);
   if (!valid) {
     const { data: failedLogin, error: failedLoginError } = await supabase.rpc(
       "pam_register_failed_login",
@@ -104,10 +108,33 @@ export async function loginAction(
     };
   }
 
+  // Rotasi session_epoch di setiap login → sesi lama (token curian) ikut dicabut
+  const sessionEpoch = crypto.randomUUID();
+  const { error: epochError } = await supabase
+    .from("pam_profiles")
+    .update({ session_epoch: sessionEpoch })
+    .eq("id", data.id);
+  if (epochError) {
+    console.error("[staff-login] gagal rotasi session_epoch:", epochError.message);
+    return { error: "Gagal memverifikasi login. Coba kembali." };
+  }
+
+  // Upgrade hash format lama (SHA-256 berulang) ke scrypt asli
+  if (isLegacyPasscodeHash(data.passcode_hash)) {
+    const newHash = await hashPasscode(passcode);
+    const { error: rehashError } = await supabase
+      .from("pam_profiles")
+      .update({ passcode_hash: newHash })
+      .eq("id", data.id);
+    if (rehashError) {
+      console.error("[staff-login] gagal upgrade passcode hash:", rehashError.message);
+    }
+  }
+
   await createSession({
     userId: data.id,
     role: result.role,
-    sessionEpoch: result.session_epoch,
+    sessionEpoch,
   });
 
   return {
@@ -117,6 +144,14 @@ export async function loginAction(
 }
 
 export async function logoutAction() {
+  const session = await getSession();
+  if (session) {
+    const supabase = createSupabaseAdmin();
+    await supabase
+      .from("pam_profiles")
+      .update({ session_epoch: crypto.randomUUID() })
+      .eq("id", session.userId);
+  }
   await deleteSession();
   redirect("/login");
 }

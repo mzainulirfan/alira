@@ -1,9 +1,12 @@
 const { createClient } = require("@supabase/supabase-js");
-const { createHash, randomBytes, randomUUID } = require("node:crypto");
+const { randomBytes, randomUUID, scryptSync } = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const ITERATIONS = 100_000;
+const SCRYPT_N = 32768;
+const SCRYPT_R = 8;
+const SCRYPT_P = 1;
+const SCRYPT_MAXMEM = 64 * 1024 * 1024;
 const KEY_LENGTH = 64;
 
 function loadEnv() {
@@ -18,17 +21,15 @@ function loadEnv() {
   }
 }
 
-function derive(passcode, salt, iterations) {
-  let value = createHash("sha256").update(salt + passcode).digest();
-  for (let i = 1; i < iterations; i++) {
-    value = createHash("sha256").update(value).digest();
-  }
-  return value.subarray(0, KEY_LENGTH).toString("hex");
-}
-
 function hashPasscode(passcode) {
   const salt = randomBytes(16).toString("hex");
-  return `scrypt$${ITERATIONS}$${salt}$${derive(passcode, salt, ITERATIONS)}`;
+  const derived = scryptSync(passcode, salt, KEY_LENGTH, {
+    N: SCRYPT_N,
+    r: SCRYPT_R,
+    p: SCRYPT_P,
+    maxmem: SCRYPT_MAXMEM,
+  });
+  return `scrypt$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${salt}$${derived.toString("hex")}`;
 }
 
 async function main() {

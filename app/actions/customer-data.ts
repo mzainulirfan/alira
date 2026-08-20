@@ -1,8 +1,9 @@
-"use server";
+import "server-only";
 
 import { unstable_cache } from "next/cache";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { createSignedUrlMap } from "@/lib/storage";
+import { getCurrentCustomerProfile } from "@/lib/auth/customer-dal";
 import type { Bill, MeterReading, Payment } from "@/lib/types";
 
 export type DashboardData = {
@@ -56,11 +57,19 @@ async function getDashboardDataForCustomer(customerId: string): Promise<Dashboar
   };
 }
 
-export const getCustomerDashboardData = unstable_cache(
+const getDashboardDataForCustomerCached = unstable_cache(
   getDashboardDataForCustomer,
   ["customer-dashboard"],
   { revalidate: 60, tags: ["customer-dashboard"] }
 );
+
+export async function getCustomerDashboardData(customerId: string): Promise<DashboardData> {
+  const profile = await getCurrentCustomerProfile();
+  if (profile.id !== customerId) {
+    throw new Error("Akses ditolak.");
+  }
+  return getDashboardDataForCustomerCached(customerId);
+}
 
 export async function getCustomerBills(
   customerId: string,
@@ -68,6 +77,10 @@ export async function getCustomerBills(
   limit = 20,
   statusFilter?: "all" | "unpaid" | "paid" | "overdue"
 ) {
+  const profile = await getCurrentCustomerProfile();
+  if (profile.id !== customerId) {
+    throw new Error("Akses ditolak.");
+  }
   const supabase = createSupabaseAdmin();
 
   let query = supabase
@@ -91,6 +104,7 @@ export async function getCustomerBills(
 }
 
 export async function getCustomerBillDetail(billId: string) {
+  const profile = await getCurrentCustomerProfile();
   const supabase = createSupabaseAdmin();
 
   const { data: bill, error } = await supabase
@@ -99,6 +113,7 @@ export async function getCustomerBillDetail(billId: string) {
       "id, customer_id, meter_reading_id, period, usage, price_per_m3, water_amount, monthly_fee, total_amount, due_date, status, created_at, updated_at"
     )
     .eq("id", billId)
+    .eq("customer_id", profile.id)
     .maybeSingle();
 
   if (error || !bill) return null;
@@ -109,6 +124,10 @@ export async function getCustomerBillPayment(
   customerId: string,
   billId: string
 ): Promise<Pick<Payment, "id" | "payment_date"> | null> {
+  const profile = await getCurrentCustomerProfile();
+  if (profile.id !== customerId) {
+    throw new Error("Akses ditolak.");
+  }
   const supabase = createSupabaseAdmin();
 
   const { data, error } = await supabase
@@ -147,6 +166,10 @@ export async function getCustomerMeterReadings(
   limit = 20,
   filter: CustomerMeterReadingsFilter = {}
 ) {
+  const profile = await getCurrentCustomerProfile();
+  if (profile.id !== customerId) {
+    throw new Error("Akses ditolak.");
+  }
   const supabase = createSupabaseAdmin();
 
   let query = supabase
@@ -180,6 +203,10 @@ export async function getCustomerMeterReadingDetail(
   customerId: string,
   readingId: string
 ) {
+  const profile = await getCurrentCustomerProfile();
+  if (profile.id !== customerId) {
+    throw new Error("Akses ditolak.");
+  }
   const supabase = createSupabaseAdmin();
 
   const { data: reading, error } = await supabase

@@ -111,7 +111,7 @@ export async function saveStaffAction(
       username,
       role,
       status: "active",
-      passcode_hash: hashPasscode(passcode as string),
+      passcode_hash: await hashPasscode(passcode as string),
       must_change_passcode: true,
     });
     if (error) return { error: `Gagal menambah pegawai: ${error.message}` };
@@ -166,7 +166,7 @@ export async function resetStaffPasscodeAction(
   const { error } = await supabase
     .from("pam_profiles")
     .update({
-      passcode_hash: hashPasscode(passcode),
+      passcode_hash: await hashPasscode(passcode),
       session_epoch: randomUUID(),
       must_change_passcode: true,
       failed_attempts: 0,

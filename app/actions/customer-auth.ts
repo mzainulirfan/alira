@@ -37,7 +37,7 @@ export async function authenticateCustomer(
   const { data: customer, error: customerError } = await supabase
     .from("pam_customers")
     .select(
-      "id, customer_number, name, passcode_hash, must_change_passcode, failed_attempts, locked_until, session_epoch, status"
+      "id, customer_number, passcode_hash, must_change_passcode, locked_until, status"
     )
     .eq("customer_number", customerNumber)
     .eq("status", "active")
@@ -48,7 +48,7 @@ export async function authenticateCustomer(
     return { error: "Terjadi kesalahan server. Coba lagi nanti." };
   }
   if (!customer) {
-    return { error: "Nomor pelanggan tidak ditemukan atau tidak aktif." };
+    return { error: "Nomor pelanggan atau passcode salah." };
   }
 
   // Cek lockout
@@ -60,31 +60,36 @@ export async function authenticateCustomer(
   }
 
   // Verifikasi passcode
-  if (!customer.passcode_hash || !(await compare(passcode, customer.passcode_hash))) {
-    const newFailedAttempts = (customer.failed_attempts ?? 0) + 1;
-    const updates: Record<string, unknown> = { failed_attempts: newFailedAttempts };
-    if (newFailedAttempts >= MAX_FAILED_ATTEMPTS) {
-      updates.locked_until = new Date(Date.now() + LOCKOUT_DURATION_MINUTES * 60 * 1000).toISOString();
-    }
+  if (!customer.passcode_hash) {
+    return { error: "Nomor pelanggan atau passcode salah." };
+  }
+  if (!(await compare(passcode, customer.passcode_hash))) {
     try {
-      const { error: updateError } = await supabase
-        .from("pam_customers")
-        .update(updates)
-        .eq("id", customer.id);
-      if (updateError) {
-        console.error("[customer-login] gagal update failed_attempts:", updateError.message);
+      const { data: failedLogin, error: failedLoginError } = await supabase.rpc(
+        "pam_register_customer_failed_login",
+        {
+          p_customer_id: customer.id,
+          p_expected_passcode_hash: customer.passcode_hash,
+          p_max_attempts: MAX_FAILED_ATTEMPTS,
+          p_lock_minutes: LOCKOUT_DURATION_MINUTES,
+        }
+      );
+      if (failedLoginError) {
+        console.error("[customer-login] gagal RPC failed login:", failedLoginError.message);
         return { error: "Terjadi kesalahan server. Coba lagi nanti." };
       }
       await logLoginAttempt(customer.id, false);
+      const result = failedLogin as { accepted?: boolean; locked?: boolean } | null;
+      if (result?.locked) {
+        return {
+          error: `Terlalu banyak percobaan gagal. Coba lagi ${LOCKOUT_DURATION_MINUTES} menit.`,
+        };
+      }
     } catch (error) {
       console.error("[customer-login] gagal memproses login gagal:", error);
       return { error: "Terjadi kesalahan server. Coba lagi nanti." };
     }
-
-    if (newFailedAttempts >= MAX_FAILED_ATTEMPTS) {
-      return { error: `Passcode salah. Akun terkunci ${LOCKOUT_DURATION_MINUTES} menit.` };
-    }
-    return { error: `Passcode salah. Sisa percobaan: ${MAX_FAILED_ATTEMPTS - newFailedAttempts}.` };
+    return { error: "Nomor pelanggan atau passcode salah." };
   }
 
   try {
@@ -134,6 +139,14 @@ async function logLoginAttempt(customerId: string, success: boolean) {
 }
 
 export async function logoutCustomerAction() {
+  const session = await getCustomerSession();
+  if (session) {
+    const supabase = createSupabaseAdmin();
+    await supabase
+      .from("pam_customers")
+      .update({ session_epoch: crypto.randomUUID() })
+      .eq("id", session.customerId);
+  }
   await deleteCustomerSession();
   redirect("/login");
 }

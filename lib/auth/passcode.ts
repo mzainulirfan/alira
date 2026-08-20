@@ -1,33 +1,105 @@
 import "server-only";
 
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 
-const ITERATIONS = 100_000;
+const SCRYPT_N = 32768;
+const SCRYPT_R = 8;
+const SCRYPT_P = 1;
+const SCRYPT_MAXMEM = 64 * 1024 * 1024;
 const KEY_LENGTH = 64;
 
-export function hashPasscode(passcode: string): string {
-  const salt = randomBytes(16).toString("hex");
-  const derived = derive(passcode, salt, ITERATIONS);
-  return `scrypt$${ITERATIONS}$${salt}$${derived}`;
+function scryptAsync(
+  password: string,
+  salt: string,
+  keylen: number,
+  options: { N: number; r: number; p: number; maxmem: number }
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    scrypt(password, salt, keylen, options, (err, derivedKey) => {
+      if (err) reject(err);
+      else resolve(derivedKey);
+    });
+  });
 }
 
-export function verifyPasscode(passcode: string, stored: string): boolean {
-  const [scheme, iterations, salt, expected] = stored.split("$");
-  if (scheme !== "scrypt" || !iterations || !salt || !expected) {
+export async function hashPasscode(passcode: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const derived = await scryptAsync(passcode, salt, KEY_LENGTH, {
+    N: SCRYPT_N,
+    r: SCRYPT_R,
+    p: SCRYPT_P,
+    maxmem: SCRYPT_MAXMEM,
+  });
+  return `scrypt$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${salt}$${derived.toString("hex")}`;
+}
+
+export async function verifyPasscode(
+  passcode: string,
+  stored: string
+): Promise<boolean> {
+  const parts = stored.split("$");
+  if (parts.length < 4 || parts[0] !== "scrypt") return false;
+
+  // Format lama (pra-fix): scrypt$iterations$salt$expected (SHA-256 berulang)
+  if (parts.length === 4) {
+    return verifyLegacy(passcode, parts[1], parts[2], parts[3]);
+  }
+
+  // Format baru: scrypt$N$r$p$salt$expected
+  if (parts.length !== 6) return false;
+  const [, nRaw, rRaw, pRaw, salt, expected] = parts;
+  const n = Number(nRaw);
+  const r = Number(rRaw);
+  const p = Number(pRaw);
+  if (
+    !Number.isSafeInteger(n) ||
+    n < 1 ||
+    !Number.isSafeInteger(r) ||
+    r < 1 ||
+    !Number.isSafeInteger(p) ||
+    p < 1
+  ) {
     return false;
   }
-  const derived = derive(passcode, salt, Number(iterations));
-  const a = Buffer.from(derived, "hex");
-  const b = Buffer.from(expected, "hex");
-  return a.length === b.length && timingSafeEqual(a, b);
+
+  try {
+    const derived = await scryptAsync(passcode, salt, KEY_LENGTH, {
+      N: n,
+      r,
+      p,
+      maxmem: SCRYPT_MAXMEM,
+    });
+    const expectedBuffer = Buffer.from(expected, "hex");
+    return (
+      derived.length === expectedBuffer.length &&
+      timingSafeEqual(derived, expectedBuffer)
+    );
+  } catch {
+    return false;
+  }
 }
 
-function derive(passcode: string, salt: string, iterations: number): string {
+export function isLegacyPasscodeHash(stored: string): boolean {
+  const parts = stored.split("$");
+  return parts.length === 4 && parts[0] === "scrypt";
+}
+
+function verifyLegacy(
+  passcode: string,
+  iterations: string,
+  salt: string,
+  expected: string
+): boolean {
+  const count = Number(iterations);
+  if (!Number.isSafeInteger(count) || count < 1) return false;
   let value = createHash("sha256").update(salt + passcode).digest();
-  for (let i = 1; i < iterations; i++) {
+  for (let i = 1; i < count; i++) {
     value = createHash("sha256").update(value).digest();
   }
-  return value.subarray(0, KEY_LENGTH).toString("hex");
+  const expectedBuffer = Buffer.from(expected, "hex");
+  return (
+    value.length === expectedBuffer.length && timingSafeEqual(value, expectedBuffer)
+  );
 }
 
 export function generatePasscode(): string {

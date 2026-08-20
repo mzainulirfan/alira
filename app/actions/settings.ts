@@ -157,7 +157,7 @@ export async function updatePasscodeAction(
     return { error: "Passcode belum diatur." };
   }
 
-  const ok = verifyPasscode(current, row.passcode_hash);
+  const ok = await verifyPasscode(current, row.passcode_hash);
   if (!ok) {
     return { error: "Passcode saat ini salah." };
   }

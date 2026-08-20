@@ -55,7 +55,9 @@ export async function resolveMeterScanAction(
   const supabase = createSupabaseAdmin();
   const { data: customer, error: customerError } = await supabase
     .from("pam_customers")
-    .select("*")
+    .select(
+      "id, customer_number, name, phone, address, meter_number, join_date, status, created_at, updated_at"
+    )
     .eq("customer_number", customerNumber)
     .maybeSingle();
   if (customerError) return { error: customerError.message };
@@ -66,7 +68,9 @@ export async function resolveMeterScanAction(
   const [readingResult, previousResult, billResult] = await Promise.all([
     supabase
       .from("pam_meter_readings")
-      .select("*")
+      .select(
+        "id, customer_id, period, previous_reading, current_reading, usage, photo_path, recorded_by, recorded_at, created_at"
+      )
       .eq("customer_id", customer.id)
       .eq("period", periodDate)
       .maybeSingle(),

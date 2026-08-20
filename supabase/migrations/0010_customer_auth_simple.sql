@@ -33,6 +33,11 @@ CREATE TABLE IF NOT EXISTS pam_customer_login_logs (
 CREATE INDEX IF NOT EXISTS idx_pam_customer_login_logs_customer_created
   ON pam_customer_login_logs (customer_id, created_at DESC);
 
+-- 3b. Kunci tabel audit: RLS + cabut akses anon/authenticated
+ALTER TABLE pam_customer_login_logs ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE pam_customer_login_logs FROM anon, authenticated, PUBLIC;
+REVOKE ALL ON SEQUENCE pam_customer_login_logs_id_seq FROM anon, authenticated, PUBLIC;
+
 -- 4. Comment untuk dokumentasi
 COMMENT ON COLUMN pam_customers.passcode_hash IS 'bcrypt hash of 6-digit passcode';
 COMMENT ON COLUMN pam_customers.must_change_passcode IS 'Force change passcode on next login';
