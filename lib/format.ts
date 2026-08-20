@@ -46,3 +46,13 @@ export function formatShortPeriod(value: string): string {
     year: "numeric",
   });
 }
+
+export function formatShortPeriodLabel(value: string): string {
+  // value format: "YYYY-MM" -> "AGU 2026"
+  const [year, month] = value.split("-").map(Number);
+  if (!year || !month) return value.toUpperCase();
+  const date = new Date(year, month - 1, 1);
+  return `${date
+    .toLocaleDateString("id-ID", { month: "short" })
+    .toUpperCase()} ${year}`;
+}

@@ -312,24 +312,64 @@ export function CustomerForm({
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="join_date">Tanggal Mulai</Label>
-              <div className="relative">
-                <HugeiconsIcon
-                  icon={Calendar01Icon}
-                  strokeWidth={1.6}
-                  className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                />
+<div className="flex flex-col gap-1.5">
+            <Label htmlFor="join_date">Tanggal Mulai</Label>
+            <div className="relative">
+              <HugeiconsIcon
+                icon={Calendar01Icon}
+                strokeWidth={1.6}
+                className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                id="join_date"
+                name="join_date"
+                type="date"
+                value={values.join_date}
+                onChange={(e) => update("join_date", e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+
+          {!isEdit && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="passcode">Passcode Sementara</Label>
                 <Input
-                  id="join_date"
-                  name="join_date"
-                  type="date"
-                  value={values.join_date}
-                  onChange={(e) => update("join_date", e.target.value)}
-                  className="pl-8"
+                  id="passcode"
+                  name="passcode"
+                  type="password"
+                  inputMode="numeric"
+                  minLength={6}
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  placeholder="cth. 123456"
+                  autoComplete="new-password"
+                  className="h-10"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="confirm_passcode">Konfirmasi Passcode</Label>
+                <Input
+                  id="confirm_passcode"
+                  name="confirm_passcode"
+                  type="password"
+                  inputMode="numeric"
+                  minLength={6}
+                  maxLength={6}
+                  pattern="[0-9]{6}"
+                  placeholder="Ulangi passcode"
+                  autoComplete="new-password"
+                  className="h-10"
                 />
               </div>
             </div>
+          )}
+          <p className="-mt-2 text-xs text-muted-foreground">
+            {isEdit
+              ? "Passcode tidak dapat diubah di sini."
+              : "Kosongkan jika pelanggan belum perlu login. Pelanggan wajib mengganti passcode saat pertama login."}
+          </p>
 
           </div>
 

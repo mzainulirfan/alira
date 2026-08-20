@@ -89,7 +89,9 @@ export function LoginForm() {
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="identifier">
-          {isCustomerInput ? "Nomor Pelanggan" : "Username"}
+          <span className="font-mono text-[11px] uppercase tracking-[0.05em]">
+            {isCustomerInput ? "Nomor Pelanggan" : "Username"}
+          </span>
         </Label>
         <Input
           id="identifier"
@@ -105,18 +107,21 @@ export function LoginForm() {
           disabled={pending}
           autoFocus
           required
+          className="h-11 rounded-[10px] border-line! font-mono text-[13px] font-semibold text-petrol! placeholder:font-sans placeholder:text-[13px] placeholder:font-normal placeholder:text-muted-2!"
         />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[11.5px] text-muted-2">
           Petugas pakai username, pelanggan pakai nomor pelanggan (PAM-XXXXXX).
         </p>
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label id="passcode-label" htmlFor="passcode">Passcode</Label>
+        <Label id="passcode-label" htmlFor="passcode">
+          <span className="font-mono text-[11px] uppercase tracking-[0.05em]">Passcode</span>
+        </Label>
         <div
           role="group"
           aria-labelledby="passcode-label"
-          className="flex w-full gap-2"
+          className="flex w-full gap-1.5"
         >
           {digits.map((digit, i) => (
             <input
@@ -139,8 +144,8 @@ export function LoginForm() {
               aria-describedby={hasError ? "login-error" : undefined}
               disabled={pending}
               className={cn(
-                "h-14 w-full min-w-0 flex-1 rounded-md border border-input bg-transparent text-center text-xl font-medium text-foreground outline-none transition-colors",
-                "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                "h-[52px] w-full min-w-0 flex-1 rounded-[10px] border border-line bg-paper text-center font-mono text-lg font-bold text-petrol outline-none transition-colors",
+                "focus-visible:border-aqua focus-visible:ring-3 focus-visible:ring-aqua/20",
                 hasError && "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
               )}
             />
@@ -154,7 +159,7 @@ export function LoginForm() {
         )}
       </div>
 
-      <Button type="submit" size="lg" disabled={pending} className="h-12 w-full">
+      <Button type="submit" size="lg" disabled={pending} className="h-12 w-full rounded-[10px] bg-petrol font-display text-[15px] font-semibold text-white hover:bg-petrol-2">
         {pending ? "Memeriksa..." : "Masuk"}
       </Button>
     </form>

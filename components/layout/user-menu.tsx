@@ -24,7 +24,7 @@ export function UserMenu({
     <Menu.Root>
       <Menu.Trigger
         aria-label="Menu akun"
-        className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-active focus:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="relative flex size-9 items-center justify-center rounded-[10px] bg-petrol font-display text-sm font-bold text-white transition-colors hover:bg-petrol-2 focus:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 after:absolute after:-inset-1 after:rounded-[13px] after:border-[1.5px] after:border-brass after:opacity-55"
       >
         {getInitial(userName)}
       </Menu.Trigger>

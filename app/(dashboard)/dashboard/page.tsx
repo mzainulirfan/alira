@@ -214,6 +214,7 @@ export default async function DashboardPage({
   return (
     <DashboardSummary
       period={period}
+      userName={session.profile.name}
       activeCustomers={activeCustomers}
       totalCustomers={totalCustomers}
       readingDone={readingDone}

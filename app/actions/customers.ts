@@ -1,10 +1,13 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+import { hash } from "bcryptjs";
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
   createCustomer,
   updateCustomer,
   setCustomerStatus,
+  resetCustomerPasscode,
   getCustomersPage,
 } from "@/lib/data/customers";
 import { assertRole, verifySession } from "@/lib/auth/dal";
@@ -26,6 +29,16 @@ function parseInput(formData: FormData): CustomerInput {
   if (phone && !/^[0-9+\-\s()]{8,16}$/.test(phone)) {
     throw new Error("Nomor HP tidak valid.");
   }
+  const passcode = stringOrNull(formData.get("passcode"));
+  if (passcode && !/^\d{6}$/.test(passcode)) {
+    throw new Error("Passcode sementara harus tepat 6 digit angka.");
+  }
+  if (passcode) {
+    const confirmation = stringOrNull(formData.get("confirm_passcode"));
+    if (passcode !== confirmation) {
+      throw new Error("Konfirmasi passcode tidak cocok.");
+    }
+  }
   return {
     name: name.trim(),
     phone,
@@ -33,6 +46,7 @@ function parseInput(formData: FormData): CustomerInput {
     meter_number: stringOrNull(formData.get("meter_number")),
     join_date: stringOrNull(formData.get("join_date")),
     status: formData.get("status") === "inactive" ? "inactive" : "active",
+    passcode,
   };
 }
 
@@ -49,7 +63,8 @@ export async function createCustomerAction(
   try {
     await assertRole(METER_ROLES);
     const input = parseInput(formData);
-    const customer = await createCustomer(input);
+    const passcodeHash = input.passcode ? await hash(input.passcode, 12) : null;
+    const customer = await createCustomer(input, passcodeHash);
     revalidatePath("/customers");
     revalidateTag("customers", "max");
     return { success: true, customerId: customer.id };
@@ -92,6 +107,35 @@ export async function setCustomerStatusAction(
   revalidatePath("/customers");
   revalidatePath(`/customers/${id}`);
   revalidateTag("customers", "max");
+}
+
+export async function resetCustomerPasscodeAction(
+  _prev: CustomerFormState | undefined,
+  formData: FormData
+): Promise<CustomerFormState> {
+  const id = formData.get("id");
+  const passcode = formData.get("passcode");
+  const confirmation = formData.get("confirm_passcode");
+  if (typeof id !== "string" || !id) {
+    return { error: "Pelanggan tidak valid." };
+  }
+  if (typeof passcode !== "string" || !/^\d{6}$/.test(passcode)) {
+    return { error: "Passcode sementara harus tepat 6 digit angka." };
+  }
+  if (passcode !== confirmation) {
+    return { error: "Konfirmasi passcode tidak cocok." };
+  }
+
+  try {
+    const newHash = await hash(passcode, 12);
+    await resetCustomerPasscode(id, newHash, randomUUID());
+    revalidatePath("/customers");
+    revalidatePath(`/customers/${id}`);
+    revalidateTag("customers", "max");
+    return { success: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Gagal mereset passcode." };
+  }
 }
 
 export async function loadMoreCustomersAction(input: {

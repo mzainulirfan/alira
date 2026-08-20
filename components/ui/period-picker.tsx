@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon } from "@hugeicons/core-free-icons";
-import { formatShortPeriod } from "@/lib/format";
+import { formatShortPeriodLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 function monthOptions(): { value: string; label: string }[] {
@@ -12,7 +12,7 @@ function monthOptions(): { value: string; label: string }[] {
   for (let i = 0; i < 12; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    options.push({ value, label: formatShortPeriod(value) });
+    options.push({ value, label: formatShortPeriodLabel(value) });
   }
   return options;
 }
@@ -40,13 +40,13 @@ export function PeriodPicker({
     <div className={cn("relative shrink-0", className)}>
       <HugeiconsIcon
         icon={Calendar01Icon}
-        className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-brass"
       />
       <select
         value={period}
         onChange={(e) => changePeriod(e.target.value)}
         aria-label="Pilih periode"
-        className="h-11 w-full appearance-none rounded-sm border border-border bg-card pl-8 pr-8 text-sm font-medium focus:border-ring focus:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="h-9 w-full appearance-none rounded-[10px] border border-line bg-card pl-9 pr-8 font-mono text-[12.5px] font-semibold text-petrol focus:border-petrol/40 focus:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -55,13 +55,15 @@ export function PeriodPicker({
         ))}
       </select>
       <svg
-        className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute right-3 top-1/2 size-3 -translate-y-1/2 text-muted-2"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
-        strokeWidth={2}
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        <path d="M6 9l6 6 6-6" />
       </svg>
     </div>
   );

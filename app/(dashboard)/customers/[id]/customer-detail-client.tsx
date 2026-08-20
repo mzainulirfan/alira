@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
+import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { IconSvgElement } from "@hugeicons/react";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -13,6 +14,7 @@ import {
   Calendar01Icon,
   BanknoteIcon,
   Tap01Icon,
+  Key01Icon,
 } from "@hugeicons/core-free-icons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +22,22 @@ import { Badge } from "@/components/ui/badge";
 import { CustomerForm } from "@/components/customers/customer-form";
 import { CustomerQrDialog } from "@/components/customers/customer-qr-dialog";
 import { ReadingForm } from "@/components/meter-readings/reading-form";
-import { setCustomerStatusAction } from "@/app/actions/customers";
+import {
+  resetCustomerPasscodeAction,
+  setCustomerStatusAction,
+  type CustomerFormState,
+} from "@/app/actions/customers";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  ConfirmationDialogHeader,
+} from "@/components/ui/confirmation-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   formatCurrency,
   formatDate,
@@ -57,6 +74,7 @@ export function CustomerDetailClient({
   canRecordMeter,
   canRecordPayment,
   canManageQr,
+  canResetPasscode,
 }: {
   customer: Customer;
   readings: MeterReading[];
@@ -68,6 +86,7 @@ export function CustomerDetailClient({
   canRecordMeter: boolean;
   canRecordPayment: boolean;
   canManageQr: boolean;
+  canResetPasscode: boolean;
 }) {
   const lastReading = readings[0] ?? null;
   const lastBill = bills[0] ?? null;
@@ -103,6 +122,7 @@ export function CustomerDetailClient({
               <div className="flex items-center gap-2">
                 {canManageQr && <CustomerQrDialog customer={customer} />}
                 {canEdit && <CustomerForm mode="edit" customer={customer} />}
+                {canResetPasscode && <ResetPasscode customer={customer} />}
               </div>
             </div>
           </div>
@@ -325,5 +345,82 @@ function StatusToggle({
         {label}
       </Button>
     </form>
+  );
+}
+
+const noState: CustomerFormState = {};
+
+function ResetPasscode({ customer }: { customer: Customer }) {
+  const [open, setOpen] = useState(false);
+  const [state, formAction, pending] = useActionState(
+    resetCustomerPasscodeAction,
+    noState
+  );
+  const [lastState, setLastState] = useState(state);
+
+  if (state !== lastState) {
+    setLastState(state);
+    if (state?.success) setOpen(false);
+  }
+
+  useEffect(() => {
+    if (state?.success) toast.success("Passcode sementara dibuat.");
+    else if (state?.error) toast.error(state.error);
+  }, [state]);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+        <HugeiconsIcon icon={Key01Icon} />
+        Reset Passcode
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <ConfirmationDialogHeader
+          icon={Key01Icon}
+          tone="warning"
+          title="Reset Passcode?"
+          description={`${customer.name} harus mengganti passcode sementara saat login berikutnya. Sesi pelanggan saat ini akan berakhir.`}
+        />
+        <form action={formAction} className="flex flex-col gap-4">
+          <input type="hidden" name="id" value={customer.id} />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`reset-passcode-${customer.id}`}>Passcode Sementara</Label>
+            <Input
+              id={`reset-passcode-${customer.id}`}
+              name="passcode"
+              type="password"
+              inputMode="numeric"
+              minLength={6}
+              maxLength={6}
+              pattern="[0-9]{6}"
+              className="h-10"
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`reset-confirm-${customer.id}`}>Konfirmasi Passcode</Label>
+            <Input
+              id={`reset-confirm-${customer.id}`}
+              name="confirm_passcode"
+              type="password"
+              inputMode="numeric"
+              minLength={6}
+              maxLength={6}
+              pattern="[0-9]{6}"
+              className="h-10"
+              required
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={pending}>
+              {pending ? "Menyimpan..." : "Reset Passcode"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

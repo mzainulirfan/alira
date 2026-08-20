@@ -134,7 +134,10 @@ export async function getCustomersPage({
   };
 }
 
-export async function createCustomer(input: CustomerInput): Promise<Customer> {
+export async function createCustomer(
+  input: CustomerInput,
+  passcodeHash?: string | null
+): Promise<Customer> {
   await assertRole(METER_ROLES);
   const supabase = createSupabaseAdmin();
   const customerNumber = await getNextCustomerNumber(supabase);
@@ -149,6 +152,8 @@ export async function createCustomer(input: CustomerInput): Promise<Customer> {
       meter_number: input.meter_number ?? null,
       join_date: input.join_date ?? null,
       status: "active",
+      passcode_hash: passcodeHash ?? null,
+      must_change_passcode: !!passcodeHash,
     })
     .select()
     .single();
@@ -192,6 +197,29 @@ export async function setCustomerStatus(
   const { error } = await supabase
     .from("pam_customers")
     .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function resetCustomerPasscode(
+  id: string,
+  passcodeHash: string,
+  sessionEpoch: string
+): Promise<void> {
+  await assertRole(ADMIN_ROLES);
+  const supabase = createSupabaseAdmin();
+
+  const { error } = await supabase
+    .from("pam_customers")
+    .update({
+      passcode_hash: passcodeHash,
+      session_epoch: sessionEpoch,
+      must_change_passcode: true,
+      failed_attempts: 0,
+      locked_until: null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id);
 
   if (error) throw new Error(error.message);

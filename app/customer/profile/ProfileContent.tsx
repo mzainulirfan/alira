@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { changePasscodeAction } from "@/app/actions/customer-auth";
+import { formatDate } from "@/lib/format";
 import { toast } from "sonner";
 
 export interface ProfileContentProps {
@@ -116,6 +117,26 @@ function PasscodeInput({
   );
 }
 
+function InfoTile({
+  icon,
+  label,
+  value,
+}: {
+  icon: typeof UserIcon;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-lg bg-muted/50 px-3 py-2.5">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <HugeiconsIcon icon={icon} className="size-4 shrink-0" />
+        <span>{label}</span>
+      </div>
+      <p className="mt-0.5 text-sm font-medium">{value}</p>
+    </div>
+  );
+}
+
 export default function ProfileContent({ profile, required }: {
   profile: ProfileContentProps["profile"];
   required: ProfileContentProps["required"];
@@ -144,14 +165,14 @@ export default function ProfileContent({ profile, required }: {
     .toUpperCase();
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <header className="flex items-center gap-3">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+      <header className="flex items-center gap-4">
+        <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-xl font-semibold text-primary-foreground">
           {initials || "P"}
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="truncate text-xl font-semibold">{profile.name}</h1>
+            <h1 className="truncate text-xl font-medium">{profile.name}</h1>
             <Badge variant={profile.status === "active" ? "success" : "secondary"}>
               {profile.status === "active" ? "Aktif" : "Nonaktif"}
             </Badge>
@@ -176,22 +197,28 @@ export default function ProfileContent({ profile, required }: {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Informasi pelanggan</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-start gap-3">
-            <HugeiconsIcon icon={UserIcon} size={18} className="mt-0.5 text-muted-foreground" />
-            <div><p className="text-sm text-muted-foreground">Nomor meter</p><p className="font-medium">{profile.meter_number || "-"}</p></div>
-          </div>
-          <div className="flex items-start gap-3">
-            <HugeiconsIcon icon={AiPhoneIcon} size={18} className="mt-0.5 text-muted-foreground" />
-            <div><p className="text-sm text-muted-foreground">Telepon</p><p className="font-medium">{profile.phone || "-"}</p></div>
-          </div>
-          <div className="flex items-start gap-3">
-            <HugeiconsIcon icon={MapPinIcon} size={18} className="mt-0.5 text-muted-foreground" />
-            <div><p className="text-sm text-muted-foreground">Alamat</p><p className="font-medium">{profile.address || "-"}</p></div>
-          </div>
-          <div className="flex items-start gap-3">
-            <HugeiconsIcon icon={CalendarIcon} size={18} className="mt-0.5 text-muted-foreground" />
-            <div><p className="text-sm text-muted-foreground">Bergabung sejak</p><p className="font-medium">{profile.join_date ? new Date(profile.join_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "-"}</p></div>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <InfoTile
+              icon={UserIcon}
+              label="Nomor meter"
+              value={profile.meter_number || "-"}
+            />
+            <InfoTile
+              icon={AiPhoneIcon}
+              label="Telepon"
+              value={profile.phone || "-"}
+            />
+            <InfoTile
+              icon={MapPinIcon}
+              label="Alamat"
+              value={profile.address || "-"}
+            />
+            <InfoTile
+              icon={CalendarIcon}
+              label="Bergabung sejak"
+              value={profile.join_date ? formatDate(profile.join_date) : "-"}
+            />
           </div>
         </CardContent>
       </Card>

@@ -127,4 +127,5 @@ export type CustomerInput = {
   meter_number?: string | null;
   join_date?: string | null;
   status?: "active" | "inactive";
+  passcode?: string | null;
 };

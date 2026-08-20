@@ -7,6 +7,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { DropletIcon, Logout01Icon, UserIcon } from "@hugeicons/core-free-icons";
 import { getCustomerProfile, logoutCustomerAction } from "@/app/actions/customer-auth";
 import { CustomerBottomNav } from "./CustomerBottomNav";
+import { CustomerSidebar } from "./CustomerSidebar";
 
 function getInitial(name: string | null): string {
   return name?.trim().charAt(0).toUpperCase() || "P";
@@ -28,18 +29,25 @@ export function CustomerPortalShell({ children }: { children: React.ReactNode })
   }, []);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background px-4">
-        <div className="flex items-center gap-2">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <HugeiconsIcon icon={DropletIcon} size={18} />
+    <div className="flex min-h-dvh flex-col bg-paper md:flex-row">
+      <CustomerSidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-line bg-paper px-4">
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-[30px] items-center justify-center rounded-[9px] bg-petrol text-aqua">
+            <HugeiconsIcon icon={DropletIcon} size={17} />
           </div>
-          <span className="font-medium text-ink">Alira</span>
+          <span className="font-display text-[19px] font-bold tracking-[-0.01em] text-petrol">
+            Alira
+            <span className="ml-1 align-middle font-display text-[13px] font-semibold uppercase tracking-[0.02em] text-brass">
+              AJA
+            </span>
+          </span>
         </div>
         <Menu.Root>
           <Menu.Trigger
             aria-label="Menu akun pelanggan"
-            className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-active focus:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="relative flex size-9 items-center justify-center rounded-[10px] bg-petrol font-display text-sm font-bold text-white transition-colors hover:bg-petrol-2 focus:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 after:absolute after:-inset-1 after:rounded-[13px] after:border-[1.5px] after:border-brass after:opacity-55"
           >
             {getInitial(customerName)}
           </Menu.Trigger>
@@ -75,6 +83,7 @@ export function CustomerPortalShell({ children }: { children: React.ReactNode })
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 pb-24 md:pb-6">
         {children}
       </main>
+      </div>
       <CustomerBottomNav />
     </div>
   );

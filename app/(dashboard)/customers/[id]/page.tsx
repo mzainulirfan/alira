@@ -41,6 +41,7 @@ export default async function CustomerDetailPage({
       canRecordMeter={session.role !== "treasurer"}
       canRecordPayment={canManageFinance(session.role)}
       canManageQr={session.role === "admin"}
+      canResetPasscode={session.role === "admin"}
     />
   );
 }

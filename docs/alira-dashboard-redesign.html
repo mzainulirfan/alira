@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alira — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E2226;
+    --petrol:#0E3B43;
+    --petrol-2:#134A53;
+    --aqua:#16A6A0;
+    --aqua-light:#E4F5F3;
+    --brass:#C8862F;
+    --brass-light:#FBF0DF;
+    --coral:#D9584A;
+    --coral-light:#FBE9E6;
+    --green:#2F9E62;
+    --green-light:#E4F5EB;
+
+    --paper:#F5FAF9;
+    --card:#FFFFFF;
+    --line:#DCE8E6;
+    --muted:#5B7370;
+    --muted-2:#8AA09D;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Inter",ui-sans-serif,system-ui,sans-serif;
+    background:#E4EDEC;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+  .disp{font-family:"Space Grotesk",ui-sans-serif,sans-serif;}
+
+  .app-shell{
+    max-width:430px;
+    margin:0 auto;
+    background:var(--paper);
+    min-height:100vh;
+    position:relative;
+    box-shadow:0 0 50px rgba(14,34,38,0.12);
+  }
+
+  .content{
+    padding:0 16px calc(108px + env(safe-area-inset-bottom));
+  }
+
+  a{text-decoration:none;color:inherit;}
+  button{font-family:inherit;border:none;background:none;cursor:pointer;}
+
+  /* ============ APP HEADER ============ */
+  .app-header{
+    height:62px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 16px;
+    background:var(--paper);
+  }
+  .brand{display:flex;align-items:center;gap:9px;}
+  .brand-mark{
+    width:30px;height:30px;
+    border-radius:9px;
+    background:var(--petrol);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .brand-name{
+    font-size:19px;
+    font-weight:700;
+    color:var(--petrol);
+    letter-spacing:-0.01em;
+  }
+  .brand-name .aja{
+    color:var(--brass);
+    font-weight:600;
+    font-size:13px;
+    margin-left:3px;
+    vertical-align:middle;
+    letter-spacing:0.02em;
+    text-transform:uppercase;
+  }
+  .avatar{
+    width:36px;height:36px;
+    border-radius:10px;
+    background:var(--petrol);
+    color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:14px;
+    font-family:"Space Grotesk",sans-serif;
+    position:relative;
+  }
+  .avatar::after{
+    content:"";
+    position:absolute;
+    inset:-3px;
+    border:1.5px solid var(--brass);
+    border-radius:12px;
+    opacity:0.55;
+  }
+
+  /* ============ DASHBOARD HEADER ============ */
+  .dash-header{
+    display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
+    margin:6px 0 14px;
+  }
+  .dash-title{
+    font-size:25px;line-height:29px;font-weight:700;
+    letter-spacing:-0.02em;color:var(--petrol);margin:0;
+  }
+  .dash-subtitle{
+    font-size:12.5px;color:var(--muted);margin:3px 0 0;font-weight:500;
+  }
+  .month-picker{
+    display:flex;align-items:center;gap:7px;
+    height:38px;padding:0 12px;
+    border:1px solid var(--line);
+    border-radius:10px;background:#fff;
+    flex-shrink:0;
+  }
+  .month-picker span{font-size:12.5px;font-weight:600;color:var(--petrol);font-family:"IBM Plex Mono",monospace;}
+  .month-picker svg:first-child{color:var(--brass);}
+  .month-picker svg:last-child{color:var(--muted-2);}
+
+  /* ============ HERO / INSTRUMENT PANEL ============ */
+  .hero{
+    position:relative;
+    border-radius:18px;
+    overflow:hidden;
+    background:linear-gradient(155deg,#0E3B43 0%, #123F46 55%, #0B2E34 100%);
+    padding:20px 18px 18px;
+    margin-bottom:14px;
+  }
+  .hero-dotgrid{
+    position:absolute;inset:0;
+    background-image:radial-gradient(rgba(255,255,255,0.09) 1px, transparent 1px);
+    background-size:14px 14px;
+    mask-image:linear-gradient(180deg, rgba(0,0,0,0.9), rgba(0,0,0,0.1));
+  }
+  .hero-ring{
+    position:absolute;
+    right:-38px; top:-38px;
+    width:170px;height:170px;
+    border-radius:999px;
+    border:1.5px solid rgba(22,166,160,0.35);
+  }
+  .hero-ring::after{
+    content:"";
+    position:absolute;
+    inset:22px;
+    border-radius:999px;
+    border:1px dashed rgba(200,134,47,0.4);
+  }
+  .hero-content{position:relative;z-index:2;}
+  .hero-eyebrow{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--aqua);
+    margin-bottom:9px;
+  }
+  .hero-eyebrow .dot{width:6px;height:6px;border-radius:999px;background:var(--aqua);}
+  .hero-content h2{
+    margin:0 0 6px;font-size:20px;font-weight:700;color:#fff;
+    font-family:"Space Grotesk",sans-serif;
+  }
+  .hero-content p{
+    margin:0 0 16px;font-size:12.5px;line-height:1.55;
+    color:#B9D4D0; max-width:78%;
+  }
+  .hero-status{
+    display:flex;align-items:center;gap:8px;
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:999px;
+    padding:6px 12px 6px 8px;
+    width:fit-content;
+  }
+  .hero-status .pulse{
+    width:16px;height:16px;border-radius:999px;
+    background:var(--green-light);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .hero-status .pulse::after{
+    content:"";width:6px;height:6px;border-radius:999px;background:var(--green);
+  }
+  .hero-status span{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px;color:#DDEFEC;letter-spacing:0.01em;
+  }
+
+  /* ============ SECTION HEADING ============ */
+  .section-heading{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:24px 0 10px;
+  }
+  .section-heading h3{
+    margin:0;font-size:15px;font-weight:700;color:var(--petrol);
+    font-family:"Space Grotesk",sans-serif;
+    display:flex;align-items:center;gap:7px;
+  }
+  .section-heading h3::before{
+    content:"";width:4px;height:15px;border-radius:2px;background:var(--brass);
+    display:inline-block;
+  }
+  .section-link{
+    display:flex;align-items:center;gap:2px;
+    font-size:11.5px;font-weight:600;color:var(--muted);
+    font-family:"IBM Plex Mono",monospace;
+  }
+  .section-link svg{width:13px;height:13px;}
+
+  /* ============ QUICK ACTIONS ============ */
+  .quick-actions{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+  }
+  .qa-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px 10px;
+    min-height:100px;
+    display:flex;flex-direction:column;justify-content:space-between;
+  }
+  .qa-icon{
+    width:34px;height:34px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:10px;
+  }
+  .qa-icon svg{width:17px;height:17px;}
+  .qa-title{
+    font-size:12.5px;font-weight:700;color:var(--petrol);margin:0 0 2px;
+    font-family:"Space Grotesk",sans-serif;
+  }
+  .qa-desc{font-size:10.5px;line-height:14px;color:var(--muted);margin:0;}
+  .qa-arrow-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+  .qa-index{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted-2);}
+  .qa-arrow{
+    width:20px;height:20px;border-radius:6px;
+    display:flex;align-items:center;justify-content:center;color:#fff;
+  }
+  .qa-arrow svg{width:11px;height:11px;}
+
+  .bg-petrol{background:var(--petrol);color:#fff;}
+  .bg-aqua-light{background:var(--aqua-light);color:var(--aqua);}
+  .bg-brass-light{background:var(--brass-light);color:var(--brass);}
+  .fill-petrol{background:var(--petrol);}
+  .fill-aqua{background:var(--aqua);}
+  .fill-brass{background:var(--brass);}
+
+  /* ============ METRICS ============ */
+  .metrics{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+    margin-top:8px;
+  }
+  .metric-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px 11px 13px;
+    min-height:118px;
+    display:flex;flex-direction:column;
+  }
+  .metric-label{
+    font-size:10.5px;font-weight:600;color:var(--muted);
+    text-transform:uppercase;letter-spacing:0.04em;
+    margin:0 0 8px;
+  }
+  .metric-value{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:22px;font-weight:600;color:var(--petrol);
+    margin:0;
+  }
+  .metric-sub{font-size:10.5px;color:var(--muted-2);margin:3px 0 0;}
+
+  .metric-dots{display:flex;gap:3px;margin-top:auto;padding-top:8px;}
+  .metric-dots span{width:6px;height:6px;border-radius:999px;background:var(--aqua-light);}
+  .metric-dots span.on{background:var(--aqua);}
+
+  .gauge-wrap{
+    display:flex;align-items:center;justify-content:center;
+    margin:2px 0 0;
+    position:relative;
+  }
+  .gauge-wrap svg{width:74px;height:74px;}
+  .gauge-center{
+    position:absolute;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .gauge-center .pct{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:14px;font-weight:700;color:var(--petrol);
+  }
+  .gauge-caption{
+    text-align:center;font-size:10px;color:var(--muted-2);margin-top:6px;
+    font-family:"IBM Plex Mono",monospace;
+  }
+
+  .pill-mini{
+    align-self:flex-start;
+    margin-top:auto;
+    background:var(--green-light);color:var(--green);
+    font-size:10px;font-weight:700;
+    padding:3px 8px;border-radius:999px;
+    font-family:"IBM Plex Mono",monospace;
+  }
+
+  /* ============ PERLU TINDAKAN — TICKET ============ */
+  .ticket{
+    position:relative;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 16px 14px 20px;
+    display:flex;align-items:center;gap:12px;
+    overflow:hidden;
+  }
+  .ticket::before{
+    content:"";
+    position:absolute;left:0;top:0;bottom:0;width:5px;
+    background:var(--brass);
+  }
+  .ticket::after{
+    content:"";
+    position:absolute;left:11px;top:0;bottom:0;
+    border-left:1.5px dashed var(--line);
+  }
+  .ticket-notch{
+    position:absolute;left:6px;width:11px;height:11px;
+    border-radius:999px;background:#E4EDEC;
+  }
+  .ticket-notch.top{top:-6px;}
+  .ticket-notch.bot{bottom:-6px;}
+  .ticket-icon{
+    width:34px;height:34px;border-radius:9px;
+    background:var(--brass-light);color:var(--brass);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .ticket-icon svg{width:17px;height:17px;}
+  .ticket-body{flex:1;}
+  .ticket-title{font-size:13.5px;font-weight:700;color:var(--petrol);margin:0;font-family:"Space Grotesk",sans-serif;}
+  .ticket-sub{font-size:10.5px;color:var(--muted);margin:1px 0 0;font-family:"IBM Plex Mono",monospace;}
+  .ticket-count{
+    font-family:"IBM Plex Mono",monospace;
+    min-width:28px;height:28px;padding:0 4px;
+    border-radius:8px;background:var(--petrol);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:13px;
+  }
+  .ticket-chevron{color:var(--muted-2);flex-shrink:0;}
+
+  /* ============ ARUS KAS — LEDGER ============ */
+  .ledger-card{
+    border:1px solid var(--line);
+    border-radius:14px;background:var(--card);
+    padding:15px 16px 16px;
+    margin-top:22px;
+  }
+  .ledger-head{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .ledger-head h3{
+    margin:0;font-size:14.5px;font-weight:700;color:var(--petrol);
+    font-family:"Space Grotesk",sans-serif;
+  }
+  .ledger-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .ledger-row:first-of-type{padding-top:0;}
+  .ledger-label{
+    display:flex;align-items:center;gap:7px;
+    font-size:12.5px;font-weight:500;color:var(--muted);
+  }
+  .ledger-label .sw{width:8px;height:8px;border-radius:2px;}
+  .ledger-val{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:var(--petrol);}
+
+  .ledger-row.net{border-bottom:none;padding-top:12px;}
+  .ledger-row.net .ledger-label{
+    font-size:13px;font-weight:700;color:var(--petrol);
+    font-family:"Space Grotesk",sans-serif;
+  }
+  .ledger-row.net .ledger-val{font-size:16.5px;font-weight:700;color:var(--petrol);}
+
+  .ledger-stamp{
+    margin-top:14px;
+    display:flex;align-items:center;gap:10px;
+    background:var(--aqua-light);
+    border-radius:10px;
+    padding:9px 12px;
+  }
+  .ledger-stamp .ring{
+    width:28px;height:28px;border-radius:999px;
+    border:1.5px solid var(--aqua);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--aqua);flex-shrink:0;
+  }
+  .ledger-stamp .ring svg{width:13px;height:13px;}
+  .ledger-stamp p{
+    margin:0;font-size:10.5px;color:var(--petrol-2);font-weight:600;
+    line-height:1.4;
+  }
+  .ledger-stamp p span{display:block;color:var(--muted);font-weight:400;font-size:10px;margin-top:1px;}
+
+  /* ============ AKTIVITAS — TIMELINE ============ */
+  .timeline-card{
+    border:1px solid var(--line);
+    border-radius:14px;background:var(--card);
+    padding:14px 16px 4px;
+  }
+  .tl-row{
+    display:flex;gap:12px;
+    padding-bottom:16px;
+    position:relative;
+  }
+  .tl-row .tl-rail{
+    display:flex;flex-direction:column;align-items:center;
+    width:10px;flex-shrink:0;
+  }
+  .tl-dot{
+    width:10px;height:10px;border-radius:999px;
+    background:var(--petrol);
+    border:2px solid var(--card);
+    box-shadow:0 0 0 1.5px var(--line);
+    flex-shrink:0;
+    margin-top:3px;
+  }
+  .tl-line{
+    width:1.5px;flex:1;
+    background:var(--line);
+    margin-top:2px;
+  }
+  .tl-row:last-child .tl-line{display:none;}
+  .tl-row:last-child{padding-bottom:14px;}
+  .tl-content{flex:1;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0;}
+  .tl-main{min-width:0;}
+  .tl-title{font-size:13px;font-weight:700;color:var(--petrol);margin:0;font-family:"Space Grotesk",sans-serif;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tl-sub{font-size:11px;color:var(--muted);margin:2px 0 0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tl-sub.mono{font-family:"IBM Plex Mono",monospace;}
+  .tl-meta{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+  .tl-time{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--muted-2);}
+  .status-pill{
+    font-size:9.5px;font-weight:700;padding:2.5px 8px;border-radius:999px;
+    background:var(--green-light);color:var(--green);
+    font-family:"IBM Plex Mono",monospace;
+  }
+
+  /* ============ BOTTOM NAV ============ */
+  .bottom-nav{
+    position:fixed;bottom:0;left:0;right:0;
+    max-width:430px;margin:0 auto;
+    background:#fff;
+    border-top:1px solid var(--line);
+    display:grid;grid-template-columns:repeat(5,1fr);
+    padding:9px 4px calc(9px + env(safe-area-inset-bottom));
+    z-index:50;
+  }
+  .nav-item{
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+    gap:5px;color:var(--muted-2);font-size:9.5px;font-weight:600;
+  }
+  .nav-item svg{width:19px;height:19px;}
+  .nav-item.active{color:var(--petrol);}
+  .nav-item.active .nav-underline{width:14px;height:2.5px;border-radius:2px;background:var(--brass);margin-top:-1px;}
+  .nav-underline{height:2.5px;margin-top:-1px;}
+  .nav-item.center{position:relative;color:var(--petrol);}
+  .nav-ring{
+    width:48px;height:48px;border-radius:999px;
+    background:var(--petrol);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    transform:translateY(-16px);
+    box-shadow:0 8px 18px rgba(14,59,67,0.38);
+    position:relative;
+  }
+  .nav-ring::after{
+    content:"";position:absolute;inset:-4px;
+    border-radius:999px;border:1.5px dashed var(--brass);opacity:0.6;
+  }
+  .nav-ring svg{width:20px;height:20px;}
+  .nav-item.center span{margin-top:-10px;}
+
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="content">
+
+    <!-- APP HEADER -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2C12 2 5 10.5 5 15.2C5 19.05 8.13 22 12 22C15.87 22 19 19.05 19 15.2C19 10.5 12 2 12 2Z" fill="#16A6A0"/>
+          </svg>
+        </div>
+        <span class="brand-name">Alira<span class="aja">AJA</span></span>
+      </div>
+      <div class="avatar">A</div>
+    </header>
+
+    <!-- DASHBOARD HEADER -->
+    <div class="dash-header">
+      <div>
+        <h1 class="dash-title">Dashboard</h1>
+        <p class="dash-subtitle">Ringkasan operasional Anda</p>
+      </div>
+      <button class="month-picker">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>AGU 2026</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+
+    <!-- HERO / INSTRUMENT PANEL -->
+    <div class="hero">
+      <div class="hero-dotgrid"></div>
+      <div class="hero-ring"></div>
+      <div class="hero-content">
+        <div class="hero-eyebrow"><span class="dot"></span>PANEL OPERASIONAL</div>
+        <h2>Selamat datang!</h2>
+        <p>Pantau operasional dan pelayanan air bersih dengan mudah, langsung dari satu panel.</p>
+        <div class="hero-status">
+          <div class="pulse"></div>
+          <span>7 PELANGGAN AKTIF &middot; SISTEM NORMAL</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="quick-actions">
+      <div class="qa-card">
+        <div class="qa-icon bg-petrol">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 13l3-3M5 13H3M21 13h-2M12 3v2"/></svg>
+        </div>
+        <div>
+          <p class="qa-title">Catat Meter</p>
+          <p class="qa-desc">Pembacaan meter pelanggan</p>
+        </div>
+        <div class="qa-arrow-row">
+          <span class="qa-index">01</span>
+          <div class="qa-arrow fill-petrol">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="qa-card">
+        <div class="qa-icon bg-aqua-light">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div>
+          <p class="qa-title">Kelola Pelanggan</p>
+          <p class="qa-desc">Kelola data pelanggan</p>
+        </div>
+        <div class="qa-arrow-row">
+          <span class="qa-index">02</span>
+          <div class="qa-arrow fill-aqua">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="qa-card">
+        <div class="qa-icon bg-brass-light">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l3 3v17l-3-2-3 2-3-2-3 2V2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+        </div>
+        <div>
+          <p class="qa-title">Catat Pengeluaran</p>
+          <p class="qa-desc">Catat &amp; kelola pengeluaran</p>
+        </div>
+        <div class="qa-arrow-row">
+          <span class="qa-index">03</span>
+          <div class="qa-arrow fill-brass">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics">
+      <div class="metric-card">
+        <p class="metric-label">Pelanggan</p>
+        <p class="metric-value">7</p>
+        <p class="metric-sub">7 total terdaftar</p>
+        <div class="metric-dots">
+          <span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span>
+        </div>
+      </div>
+
+      <div class="metric-card" style="align-items:center;">
+        <p class="metric-label" style="align-self:flex-start;">Meter</p>
+        <div class="gauge-wrap">
+          <svg viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#E4F5F3" stroke-width="7"/>
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#16A6A0" stroke-width="7"
+              stroke-linecap="round"
+              stroke-dasharray="201.06"
+              stroke-dashoffset="114.6"
+              transform="rotate(-90 40 40)"/>
+          </svg>
+          <div class="gauge-center">
+            <span class="pct">43%</span>
+          </div>
+        </div>
+        <p class="gauge-caption">3/7 TERCATAT</p>
+      </div>
+
+      <div class="metric-card">
+        <p class="metric-label">Tagihan</p>
+        <p class="metric-value">3/3</p>
+        <p class="metric-sub">0 belum lunas</p>
+        <span class="pill-mini">LUNAS SEMUA</span>
+      </div>
+    </div>
+
+    <!-- PERLU TINDAKAN -->
+    <div class="section-heading">
+      <h3>Perlu Tindakan</h3>
+      <a class="section-link" href="#">LIHAT SEMUA
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </a>
+    </div>
+    <a class="ticket" href="#">
+      <span class="ticket-notch top"></span>
+      <span class="ticket-notch bot"></span>
+      <div class="ticket-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </div>
+      <div class="ticket-body">
+        <p class="ticket-title">Meter belum dicatat</p>
+        <p class="ticket-sub">PERIODE AGU 2026</p>
+      </div>
+      <div class="ticket-count">4</div>
+      <div class="ticket-chevron">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </a>
+
+    <!-- ARUS KAS -->
+    <div class="ledger-card">
+      <div class="ledger-head">
+        <h3>Arus Kas</h3>
+        <a class="section-link" href="#">LIHAT DETAIL
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </a>
+      </div>
+
+      <div class="ledger-row">
+        <span class="ledger-label"><span class="sw" style="background:var(--aqua);"></span>Pemasukan</span>
+        <span class="ledger-val">Rp 4.449.000</span>
+      </div>
+      <div class="ledger-row">
+        <span class="ledger-label"><span class="sw" style="background:var(--coral);"></span>Pengeluaran</span>
+        <span class="ledger-val">Rp 120.000</span>
+      </div>
+      <div class="ledger-row net">
+        <span class="ledger-label">Saldo Bersih</span>
+        <span class="ledger-val">Rp 4.329.000</span>
+      </div>
+
+      <div class="ledger-stamp">
+        <div class="ring">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <p>Arus kas seimbang bulan ini
+          <span>Tidak ada transaksi tertunda</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- AKTIVITAS TERBARU -->
+    <div class="section-heading">
+      <h3>Aktivitas Terbaru</h3>
+      <a class="section-link" href="#">LIHAT SEMUA
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </a>
+    </div>
+    <div class="timeline-card">
+
+      <div class="tl-row">
+        <div class="tl-rail"><div class="tl-dot"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-main">
+            <p class="tl-title">bapak indrajaya</p>
+            <p class="tl-sub">Pelanggan baru</p>
+          </div>
+          <div class="tl-meta"><span class="tl-time">15:05</span></div>
+        </div>
+      </div>
+
+      <div class="tl-row">
+        <div class="tl-rail"><div class="tl-dot"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-main">
+            <p class="tl-title">bapak sadikin</p>
+            <p class="tl-sub">Pelanggan baru</p>
+          </div>
+          <div class="tl-meta"><span class="tl-time">14:59</span></div>
+        </div>
+      </div>
+
+      <div class="tl-row">
+        <div class="tl-rail"><div class="tl-dot"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-main">
+            <p class="tl-title">kkkkks</p>
+            <p class="tl-sub">Pelanggan baru</p>
+          </div>
+          <div class="tl-meta"><span class="tl-time">18 AGU</span></div>
+        </div>
+      </div>
+
+      <div class="tl-row">
+        <div class="tl-rail"><div class="tl-dot" style="background:var(--aqua);"></div><div class="tl-line"></div></div>
+        <div class="tl-content">
+          <div class="tl-main">
+            <p class="tl-title">sani p</p>
+            <p class="tl-sub mono">Rp 601.000</p>
+          </div>
+          <div class="tl-meta">
+            <span class="status-pill">LUNAS</span>
+            <span class="tl-time">18 AGU</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-row">
+        <div class="tl-rail"><div class="tl-dot" style="background:var(--brass);"></div></div>
+        <div class="tl-content">
+          <div class="tl-main">
+            <p class="tl-title">isi pulsa</p>
+            <p class="tl-sub mono">- Rp 100.000</p>
+          </div>
+          <div class="tl-meta"><span class="tl-time">18 AGU</span></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2L2 10.5V22h6.5v-7h7v7H22V10.5L12 2Z"/></svg>
+      <span>Home</span>
+      <div class="nav-underline"></div>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Pelanggan</span>
+    </a>
+    <a class="nav-item center" href="#">
+      <div class="nav-ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <span>Catat Meter</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l3 3v17l-3-2-3 2-3-2-3 2V2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+      <span>Tagihan</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      <span>Lainnya</span>
+    </a>
+  </nav>
+
+</div>
+</body>
+</html>
