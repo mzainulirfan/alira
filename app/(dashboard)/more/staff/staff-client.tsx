@@ -34,7 +34,8 @@ import {
 } from "@/components/ui/confirmation-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { STAFF_ROLES, STAFF_ROLE_LABEL, type StaffRole } from "@/lib/staff";
+import { STAFF_ROLES, STAFF_ROLE_LABEL } from "@/lib/staff";
+import type { StaffRole } from "@/lib/types";
 import type { StaffProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/dashboard/section-heading";

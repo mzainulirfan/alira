@@ -87,7 +87,7 @@ export function CustomerForm({
 }: {
   mode?: "create" | "edit";
   customer?: Customer;
-  trigger?: React.ReactNode;
+  trigger?: React.ReactElement;
 }) {
   const isEdit = mode === "edit";
   const router = useRouter();

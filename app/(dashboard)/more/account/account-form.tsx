@@ -10,7 +10,8 @@ import {
   ShieldIcon,
   ClockIcon,
 } from "@hugeicons/core-free-icons";
-import { STAFF_ROLE_LABEL, type StaffRole } from "@/lib/staff";
+import { STAFF_ROLE_LABEL } from "@/lib/staff";
+import type { StaffRole } from "@/lib/types";
 import type { StaffProfile } from "@/lib/types";
 import { LogoutButton } from "../logout-button";
 import { SectionHeading } from "@/components/dashboard/section-heading";

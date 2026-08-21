@@ -149,7 +149,7 @@ export function BillsTable({
   const router = useRouter();
 
   const summary = useMemo(() => {
-    const unpaid = initialBills.filter((b) => b.status === "unpaid" || b.status === "pending").length;
+    const unpaid = initialBills.filter((b) => b.status === "unpaid").length;
     const paid = initialBills.filter((b) => b.status === "paid").length;
     const overdue = initialBills.filter((b) => b.status === "overdue").length;
     return { unpaid, paid, overdue };
