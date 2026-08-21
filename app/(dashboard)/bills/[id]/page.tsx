@@ -42,7 +42,6 @@ export default async function BillDetailPage({
       payment={payment}
       previousBill={adjacentBills.previous}
       nextBill={adjacentBills.next}
-      pamName={settings.pam_name}
     />
   );
 }

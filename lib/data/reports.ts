@@ -20,6 +20,7 @@ export type ReportSummary = {
 };
 
 export type ReportRow = {
+  id: string;
   customer_number: string;
   name: string;
   status: string;
@@ -94,6 +95,7 @@ export const getReport = cache(
     }>) {
       const bill = billByCustomer.get(c.id) ?? undefined;
       rows.push({
+        id: c.id,
         customer_number: c.customer_number,
         name: c.name,
         status: c.status,

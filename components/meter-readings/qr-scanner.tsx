@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Camera01Icon,
+  QrCode01Icon,
   CheckmarkCircle01Icon,
   Image01Icon,
   ReloadIcon,
@@ -337,9 +337,15 @@ export function QrScanner({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button size="sm" />}>
-        <HugeiconsIcon icon={Camera01Icon} />
-        Scan Kode
+      <DialogTrigger
+        render={
+          <Button
+            type="button"
+            className="flex size-6 items-center justify-center rounded-md bg-aqua-light p-0 text-aqua transition-colors hover:bg-aqua hover:text-white"
+          />
+        }
+      >
+        <HugeiconsIcon icon={QrCode01Icon} className="size-4" />
       </DialogTrigger>
       <DialogContent className="max-h-[calc(100%-2rem)] overflow-y-auto sm:max-w-md">
         <DialogHeader>

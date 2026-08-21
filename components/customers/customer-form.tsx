@@ -12,6 +12,7 @@ import {
   GaugeIcon,
   MapPinIcon,
   UserIcon,
+  CheckmarkCircle01Icon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -176,21 +177,24 @@ export function CustomerForm({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button />}>
-        {trigger ?? (
-          <>
-            <HugeiconsIcon icon={isEdit ? Edit01Icon : Add01Icon} />
-            {isEdit ? "Edit" : "Tambah Pelanggan"}
-          </>
-        )}
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          trigger ?? (
+            <Button>
+              <HugeiconsIcon icon={isEdit ? Edit01Icon : Add01Icon} />
+              {isEdit ? "Edit Pelanggan" : "Tambah Pelanggan"}
+            </Button>
+          )
+        }
+      />
+
       <DialogContent
         initialFocus={() => nameRef.current}
-        className="max-h-[calc(100%-2rem)] overflow-y-auto sm:max-w-md"
+        className="max-h-[calc(100%-2rem)] overflow-y-auto sm:max-w-[420px] rounded-[14px] bg-card"
       >
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Pelanggan" : "Tambah Pelanggan"}</DialogTitle>
-          <DialogDescription>
+        <DialogHeader className="border-b border-line pb-3">
+          <DialogTitle className="font-display text-[18px] font-bold text-petrol">{isEdit ? "Edit Pelanggan" : "Tambah Pelanggan"}</DialogTitle>
+          <DialogDescription className="font-mono text-[11px] text-muted-2">
             {isEdit
               ? `Nomor ${customer?.customer_number} tidak dapat diubah.`
               : "Nomor pelanggan dibuat otomatis oleh sistem."}
@@ -203,19 +207,21 @@ export function CustomerForm({
           onSubmit={(e) => {
             if (!validate()) e.preventDefault();
           }}
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-3 pb-1"
         >
           {isEdit && customer && (
             <input type="hidden" name="id" value={customer.id} />
           )}
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="name">Nama Pelanggan</Label>
+            <Label htmlFor="name" className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.04em] text-muted-text">
+              Nama Pelanggan
+            </Label>
             <div className="relative">
               <HugeiconsIcon
                 icon={UserIcon}
                 strokeWidth={1.6}
-                className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-2"
               />
               <Input
                 ref={nameRef}
@@ -227,24 +233,24 @@ export function CustomerForm({
                 aria-invalid={!!errors.name}
                 aria-describedby={errors.name ? "name-error" : undefined}
                 autoComplete="off"
-                className="pl-8"
+                className="h-11 pl-9 rounded-[10px] border-line"
               />
             </div>
             {errors.name && (
-              <p id="name-error" className="text-xs text-destructive">
-                {errors.name}
-              </p>
+              <p id="name-error" className="text-xs text-coral">{errors.name}</p>
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="phone">Nomor HP</Label>
+              <Label htmlFor="phone" className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.04em] text-muted-text">
+                Nomor HP
+              </Label>
               <div className="relative">
                 <HugeiconsIcon
                   icon={CallIcon}
                   strokeWidth={1.6}
-                  className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-2"
                 />
                 <Input
                   id="phone"
@@ -258,23 +264,23 @@ export function CustomerForm({
                   aria-invalid={!!errors.phone}
                   aria-describedby={errors.phone ? "phone-error" : undefined}
                   autoComplete="off"
-                  className="pl-8"
+                  className="h-11 pl-9 rounded-[10px] border-line"
                 />
               </div>
               {errors.phone && (
-                <p id="phone-error" className="text-xs text-destructive">
-                  {errors.phone}
-                </p>
+                <p id="phone-error" className="text-xs text-coral">{errors.phone}</p>
               )}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="meter_number">Nomor Meter</Label>
+              <Label htmlFor="meter_number" className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.04em] text-muted-text">
+                Nomor Meter
+              </Label>
               <div className="relative">
                 <HugeiconsIcon
                   icon={GaugeIcon}
                   strokeWidth={1.6}
-                  className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-2"
                 />
                 <Input
                   id="meter_number"
@@ -284,19 +290,21 @@ export function CustomerForm({
                   onChange={(e) => update("meter_number", e.target.value)}
                   placeholder="cth. WM-003234"
                   autoComplete="off"
-                  className="pl-8"
+                  className="h-11 pl-9 rounded-[10px] border-line"
                 />
               </div>
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="address">Alamat</Label>
+            <Label htmlFor="address" className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.04em] text-muted-text">
+              Alamat
+            </Label>
             <div className="relative">
               <HugeiconsIcon
                 icon={MapPinIcon}
                 strokeWidth={1.6}
-                className="pointer-events-none absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground"
+                className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-muted-2"
               />
               <Textarea
                 id="address"
@@ -306,78 +314,93 @@ export function CustomerForm({
                 placeholder="cth. Jl. Melati No.12, RT 03/RW 01"
                 rows={2}
                 autoComplete="off"
-                className="pl-8"
+                className="h-20 pl-9 rounded-[10px] border-line"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-<div className="flex flex-col gap-1.5">
-            <Label htmlFor="join_date">Tanggal Mulai</Label>
-            <div className="relative">
-              <HugeiconsIcon
-                icon={Calendar01Icon}
-                strokeWidth={1.6}
-                className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                id="join_date"
-                name="join_date"
-                type="date"
-                value={values.join_date}
-                onChange={(e) => update("join_date", e.target.value)}
-                className="pl-8"
-              />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="join_date" className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.04em] text-muted-text">
+                Tanggal Mulai
+              </Label>
+              <div className="relative">
+                <HugeiconsIcon
+                  icon={Calendar01Icon}
+                  strokeWidth={1.6}
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-2"
+                />
+                <Input
+                  id="join_date"
+                  name="join_date"
+                  type="date"
+                  value={values.join_date}
+                  onChange={(e) => update("join_date", e.target.value)}
+                  className="h-11 pl-9 rounded-[10px] border-line"
+                />
+              </div>
             </div>
+
+            {!isEdit && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="passcode" className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.04em] text-muted-text">
+                    Passcode Sementara
+                  </Label>
+                  <Input
+                    id="passcode"
+                    name="passcode"
+                    type="password"
+                    inputMode="numeric"
+                    minLength={6}
+                    maxLength={6}
+                    pattern="[0-9]{6}"
+                    placeholder="cth. 123456"
+                    autoComplete="new-password"
+                    className="h-11 rounded-[10px] border-line"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="confirm_passcode" className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.04em] text-muted-text">
+                    Konfirmasi Passcode
+                  </Label>
+                  <Input
+                    id="confirm_passcode"
+                    name="confirm_passcode"
+                    type="password"
+                    inputMode="numeric"
+                    minLength={6}
+                    maxLength={6}
+                    pattern="[0-9]{6}"
+                    placeholder="Ulangi passcode"
+                    autoComplete="new-password"
+                    className="h-11 rounded-[10px] border-line"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {!isEdit && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="passcode">Passcode Sementara</Label>
-                <Input
-                  id="passcode"
-                  name="passcode"
-                  type="password"
-                  inputMode="numeric"
-                  minLength={6}
-                  maxLength={6}
-                  pattern="[0-9]{6}"
-                  placeholder="cth. 123456"
-                  autoComplete="new-password"
-                  className="h-10"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="confirm_passcode">Konfirmasi Passcode</Label>
-                <Input
-                  id="confirm_passcode"
-                  name="confirm_passcode"
-                  type="password"
-                  inputMode="numeric"
-                  minLength={6}
-                  maxLength={6}
-                  pattern="[0-9]{6}"
-                  placeholder="Ulangi passcode"
-                  autoComplete="new-password"
-                  className="h-10"
-                />
-              </div>
-            </div>
-          )}
-          <p className="-mt-2 text-xs text-muted-foreground">
+          <p className="text-[11px] text-muted-2">
             {isEdit
               ? "Passcode tidak dapat diubah di sini."
               : "Kosongkan jika pelanggan belum perlu login. Pelanggan wajib mengganti passcode saat pertama login."}
           </p>
 
-          </div>
-
-          <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={closeForm}>
+          <DialogFooter className="pt-2 border-t border-line">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-[10px] border-line font-display text-[13px] font-semibold text-muted-text hover:text-petrol hover:border-petrol/40 w-full"
+              onClick={closeForm}
+            >
               Batal
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button
+              type="submit"
+              disabled={pending}
+              className="rounded-[10px] bg-petrol font-display text-[14px] font-semibold text-white hover:bg-petrol-2 w-full"
+            >
               {pending ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Simpan"}
             </Button>
           </DialogFooter>
@@ -385,18 +408,27 @@ export function CustomerForm({
       </DialogContent>
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="sm:max-w-sm">
-           <ConfirmationDialogHeader
-             icon={Edit01Icon}
-             tone="warning"
-             title="Perubahan belum disimpan"
-             description="Jika ditutup sekarang, perubahan yang Anda buat akan hilang."
-           />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+        <DialogContent className="sm:max-w-[420px] rounded-[14px] bg-card">
+          <ConfirmationDialogHeader
+            icon={CheckmarkCircle01Icon}
+            tone="warning"
+            title="Perubahan belum disimpan"
+            description="Jika ditutup sekarang, perubahan yang Anda buat akan hilang."
+          />
+          <DialogFooter className="pt-2 border-t border-line">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-[10px] border-line font-display text-[13px] font-semibold text-muted-text hover:text-petrol hover:border-petrol/40 w-full"
+              onClick={() => setConfirmOpen(false)}
+            >
               Lanjut Mengisi
             </Button>
-            <Button variant="destructive" onClick={discardChanges}>
+            <Button
+              variant="outline"
+              className="rounded-[10px] border-coral text-coral hover:bg-coral-light hover:border-coral font-display text-[13px] font-semibold w-full"
+              onClick={discardChanges}
+            >
               Buang Perubahan
             </Button>
           </DialogFooter>

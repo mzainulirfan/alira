@@ -64,8 +64,6 @@ export default async function MeterReadingsPage({
       (r.customer.meter_number ?? "").toLowerCase().includes(q)
     );
   });
-  const pendingCustomers = filtered.filter((row) => !row.reading);
-
   return (
     <MeterReadingsClient
       rows={filtered}
@@ -75,7 +73,6 @@ export default async function MeterReadingsPage({
       tariff={tariff}
       query={query}
       status={status}
-      pendingCustomers={pendingCustomers}
       canEdit={METER_ROLES.includes(session.role)}
       hasActiveFilters={
         period !== currentPeriod() ||

@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowRight01Icon, GaugeIcon } from "@hugeicons/core-free-icons";
+import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  GaugeIcon,
+  Camera01Icon,
+} from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { formatDate, formatMeter, formatShortPeriod } from "@/lib/format";
+import { formatMeter } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { MeterReading } from "@/lib/types";
 
@@ -21,7 +25,7 @@ interface MeterReadingsTableProps {
 
 const FILTER_OPTIONS = [
   { key: "current-month", label: "Bulan ini" },
-  { key: "last-3-months", label: "3 bulan terakhir" },
+  { key: "last-3-months", label: "3 bulan" },
   { key: "all", label: "Semua" },
 ] as const;
 
@@ -61,8 +65,58 @@ function getMonthOptions(): Array<{ value: string; label: string }> {
   });
 }
 
-function getUsageLabel(reading: MeterReading): string {
-  return `${formatMeter(reading.previous_reading)} → ${formatMeter(reading.current_reading)}`;
+function ReadingItem({
+  reading,
+}: {
+  reading: MeterReading;
+}) {
+  const hasPhoto = Boolean(reading.photo_path);
+
+  return (
+    <Link
+      href={`/customer/meter-readings/${reading.id}`}
+      className="group relative flex items-center gap-3 overflow-hidden rounded-[14px] border border-line bg-card py-3.5 pr-3 pl-4 transition-all hover:-translate-y-0.5 hover:border-petrol/30 hover:shadow-md"
+    >
+      <span className="absolute top-0 bottom-0 left-0 w-1 bg-aqua" />
+      <span aria-hidden className="absolute inset-x-0 top-0 border-t border-dashed border-line" />
+      <span aria-hidden className="absolute inset-x-0 bottom-0 border-t border-dashed border-line" />
+
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-aqua-light text-aqua">
+        <HugeiconsIcon icon={GaugeIcon} size={20} />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <p className="font-display text-[13.5px] font-semibold text-petrol">
+            {formatMonthOnly(reading.period)}
+          </p>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] font-bold",
+              hasPhoto ? "bg-green-light text-green" : "bg-muted-2/10 text-muted-2"
+            )}
+          >
+            <HugeiconsIcon icon={Camera01Icon} className="size-2.5" />
+            {hasPhoto ? "ADA FOTO" : "TANPA FOTO"}
+          </span>
+        </div>
+        <div className="mt-1 flex items-center gap-3">
+          <p className="font-mono text-[13px] font-semibold text-petrol">
+            {formatMeter(reading.current_reading)}
+          </p>
+          <span className="text-[11px] text-muted-2">
+            Pemakaian {formatMeter(reading.usage)}
+          </span>
+        </div>
+      </div>
+
+      <HugeiconsIcon
+        icon={ArrowRight01Icon}
+        size={18}
+        className="shrink-0 rotate-180 text-muted-2 transition-transform group-hover:translate-x-0.5 group-hover:text-petrol"
+      />
+    </Link>
+  );
 }
 
 export function MeterReadingsTable({
@@ -72,6 +126,7 @@ export function MeterReadingsTable({
   initialPeriodFilter,
   initialRangeFilter,
 }: MeterReadingsTableProps) {
+  const router = useRouter();
   const [readings, setReadings] = useState<MeterReading[]>(initialReadings);
   const [totalCount, setTotalCount] = useState(total);
   const [page, setPage] = useState(initialPage);
@@ -140,105 +195,84 @@ export function MeterReadingsTable({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-      <header className="space-y-1">
-        <h1 className="text-xl font-medium">Riwayat Pencatatan Meter</h1>
-        <p className="text-sm text-muted-foreground">
-          Catatan angka meter dan pemakaian pelanggan yang paling terbaru.
-        </p>
-      </header>
+    <div className="flex flex-col gap-5">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => router.push("/customer/dashboard")}
+          className="flex size-9 items-center justify-center rounded-[10px] border border-line bg-card text-petrol transition-colors hover:bg-aqua-light hover:text-aqua"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={22} />
+        </button>
+        <div>
+          <h1 className="font-display text-[26px] font-bold leading-[32px] text-petrol sm:text-[30px] sm:leading-[38px]">
+            Riwayat Meter
+          </h1>
+          <p className="mt-0.5 text-[12.5px] font-medium text-muted-text">
+            {totalCount} pencatatan total
+          </p>
+        </div>
+      </div>
 
-      <Card>
-        <CardContent className="space-y-4 p-4 sm:p-5">
-          <div className="flex flex-col gap-3">
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-              {FILTER_OPTIONS.map((filter) => (
-                <Button
-                  key={filter.key}
-                  type="button"
-                  variant={filterMode === filter.key ? "default" : "outline"}
-                  size="sm"
-                  disabled={loading && filterMode !== filter.key}
-                  onClick={() => handleFilterModeChange(filter.key)}
-                  className={cn("shrink-0 px-3", filterMode !== filter.key && "bg-card")}
-                >
-                  {filter.label}
-                </Button>
-              ))}
-              <select
-                value={filterMode === "custom" ? periodFilter : ""}
-                onChange={(event) => handleCustomPeriodChange(event.target.value)}
-                disabled={loading}
-                aria-label="Pilih bulan pencatatan"
-                className={cn(
-                  "h-7 shrink-0 rounded-lg border px-3 text-[0.8rem] font-medium outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
-                  filterMode === "custom"
-                    ? "border-transparent bg-primary text-primary-foreground"
-                    : "border-border bg-card hover:bg-muted"
-                )}
-              >
-                <option value="">Lainnya</option>
-                {monthOptions.map((month) => (
-                  <option key={month.value} value={month.value}>
-                    {month.label}
-                  </option>
-                ))}
-              </select>
+      <section className="flex flex-col">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {FILTER_OPTIONS.map((filter) => (
+            <button
+              key={filter.key}
+              type="button"
+              disabled={loading && filterMode !== filter.key}
+              onClick={() => handleFilterModeChange(filter.key)}
+              className={cn(
+                "rounded-full px-3 py-1 font-mono text-[11px] font-semibold transition-colors",
+                filterMode === filter.key
+                  ? "bg-petrol text-white"
+                  : "bg-card text-muted-2 border border-line hover:bg-aqua-light hover:text-aqua"
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+          <select
+            value={filterMode === "custom" ? periodFilter : ""}
+            onChange={(event) => handleCustomPeriodChange(event.target.value)}
+            disabled={loading}
+            aria-label="Pilih bulan pencatatan"
+            className={cn(
+              "h-7 rounded-full border px-3 font-mono text-[11px] font-semibold outline-none transition-colors",
+              filterMode === "custom"
+                ? "border-petrol bg-petrol text-white"
+                : "border-line bg-card text-muted-2 hover:bg-aqua-light hover:text-aqua"
+            )}
+          >
+            <option value="">Bulan lainnya</option>
+            {monthOptions.map((month) => (
+              <option key={month.value} value={month.value}>
+                {month.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {readings.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 rounded-[14px] border border-dashed border-line bg-card py-12 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted-2/10">
+              <HugeiconsIcon icon={GaugeIcon} className="size-6 text-muted-2" />
             </div>
+            <p className="font-display text-[13.5px] font-semibold text-petrol">
+              Belum ada pencatatan
+            </p>
+            <p className="text-[12.5px] text-muted-2">
+              Riwayat pencatatan meter akan muncul di sini
+            </p>
           </div>
-
-          {readings.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border py-12 text-center text-muted-foreground">
-              <HugeiconsIcon icon={GaugeIcon} className="size-8" />
-              <p className="font-medium">Belum ada pencatatan meter</p>
-              <p className="text-sm">Riwayat pencatatan meter akan muncul di sini</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {readings.map((reading) => (
-                <Link
-                  key={reading.id}
-                  href={`/customer/meter-readings/${reading.id}`}
-                  className="block rounded-lg border border-border bg-background p-4 transition-colors hover:bg-muted/40"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-1">
-                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                        {formatMonthOnly(reading.period)}
-                      </p>
-                      <p className="text-lg font-medium text-foreground">
-                        {formatMeter(reading.current_reading)}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Pemakaian {formatMeter(reading.usage)}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      <Badge variant={reading.photo_path ? "success" : "secondary"}>
-                        {reading.photo_path ? "Ada foto" : "Tanpa foto"}
-                      </Badge>
-                      <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-muted-foreground" />
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-2 border-t border-border pt-3 text-sm sm:grid-cols-2">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Urutan meter</p>
-                      <p className="mt-0.5 font-medium text-foreground">{getUsageLabel(reading)}</p>
-                    </div>
-                    <div className="sm:text-right">
-                      <p className="text-xs text-muted-foreground">Pencatatan</p>
-                      <p className="mt-0.5 font-medium text-foreground">
-                        {reading.recorded_at ? formatDate(reading.recorded_at) : formatShortPeriod(reading.period)}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {readings.map((reading) => (
+              <ReadingItem key={reading.id} reading={reading} />
+            ))}
+          </div>
+        )}
+      </section>
 
       {readings.length < totalCount && (
         <div className="flex justify-center">
@@ -247,7 +281,7 @@ export function MeterReadingsTable({
             size="lg"
             onClick={() => fetchReadings(page + 1)}
             disabled={loading}
-            className="w-full max-w-xs"
+            className="w-full max-w-xs rounded-[10px] border-line"
           >
             {loading ? "Memuat..." : `Muat Lebih Banyak (${readings.length}/${totalCount})`}
           </Button>

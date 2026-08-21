@@ -5,40 +5,26 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
-  BanknoteIcon,
-  Calendar01Icon,
   Camera01Icon,
+  Calendar01Icon,
   GaugeIcon,
   InvoiceIcon,
   PrinterIcon,
   WhatsappIcon,
 } from "@hugeicons/core-free-icons";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, formatMeter, formatShortPeriod } from "@/lib/format";
 import type { AdjacentBill, BillWithCustomer } from "@/lib/data/bills";
 import type { PaymentDetail } from "@/lib/data/payments";
 import type { MeterReading } from "@/lib/types";
+import { SectionHeading } from "@/components/dashboard/section-heading";
+import { cn } from "@/lib/utils";
 
 const STATUS_LABEL: Record<string, string> = {
   unpaid: "Belum Dibayar",
   paid: "Lunas",
   overdue: "Menunggak",
   cancelled: "Dibatalkan",
-};
-
-const STATUS_VARIANT: Record<string, "success" | "warning" | "destructive" | "secondary"> = {
-  unpaid: "warning",
-  paid: "success",
-  overdue: "destructive",
-  cancelled: "secondary",
 };
 
 export function BillDetailClient({
@@ -48,7 +34,6 @@ export function BillDetailClient({
   payment,
   previousBill,
   nextBill,
-  pamName,
 }: {
   bill: BillWithCustomer;
   reading: MeterReading | null;
@@ -56,254 +41,257 @@ export function BillDetailClient({
   payment: PaymentDetail | null;
   previousBill: AdjacentBill | null;
   nextBill: AdjacentBill | null;
-  pamName: string;
 }) {
-  const canPay =
-    canManagePayment &&
-    (bill.status === "unpaid" || bill.status === "overdue");
   const statusDescription = getStatusDescription(bill, payment);
   const whatsappUrl = getWhatsappUrl(bill);
 
   return (
     <div
       data-print-invoice
-      className="mx-auto flex w-full max-w-3xl flex-col gap-4 print:max-w-none"
+      className="mx-auto flex w-full max-w-3xl flex-col gap-5 print:max-w-none"
     >
-      <div className="hidden border-b pb-4 print:block">
-        <p className="text-xl font-medium">{pamName}</p>
-        <p className="text-sm text-muted-foreground">Tagihan Air Pelanggan</p>
-      </div>
-
-      <div
-        data-print-hide
-        className="flex items-center justify-between gap-3 print:hidden"
-      >
-        <div className="flex min-w-0 items-center gap-2">
-          <Button variant="ghost" size="icon-sm" render={<Link href="/bills" />}>
-            <HugeiconsIcon icon={ArrowLeft01Icon} />
-            <span className="sr-only">Kembali</span>
-          </Button>
-          <div className="min-w-0">
-            <h1 className="text-xl font-medium">Detail Tagihan</h1>
-            <p className="truncate text-sm text-muted-foreground">
-              {formatShortPeriod(bill.period.slice(0, 7))}
-            </p>
-          </div>
+      <div data-print-hide className="flex items-end justify-between gap-3">
+        <Link href="/bills" className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-aqua-light text-aqua transition-colors hover:bg-aqua/80">
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={22} />
+        </Link>
+        <div>
+          <h1 className="font-display text-[26px] font-bold leading-[32px] text-petrol sm:text-[30px] sm:leading-[38px]">
+            Detail Tagihan
+          </h1>
+          <p className="mt-0.5 text-[12.5px] font-medium text-muted-text">
+            {formatShortPeriod(bill.period)} · {bill.customer.name}
+          </p>
         </div>
-        <Badge variant={STATUS_VARIANT[bill.status]}>
-          {STATUS_LABEL[bill.status]}
-        </Badge>
       </div>
 
-      <Card>
-        <CardContent className="flex flex-col gap-5 py-4">
+      <BillHero
+        status={bill.status}
+        totalAmount={bill.total_amount}
+        dueDate={bill.due_date}
+        payment={payment}
+      />
+
+      <section className="flex flex-col">
+        <SectionHeading title="Pelanggan" />
+        <Link href={`/customers/${bill.customer.id}`} className="group relative flex items-center gap-3 overflow-hidden rounded-[14px] border border-line bg-card py-3.5 pr-3 pl-4 transition-all hover:-translate-y-0.5 hover:border-petrol/30 hover:shadow-md">
+          <span className="absolute top-0 bottom-0 left-0 w-1 bg-aqua/60" />
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-aqua-light text-aqua">
+            <HugeiconsIcon icon={InvoiceIcon} size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-[13.5px] font-semibold text-petrol">{bill.customer.name}</p>
+            <p className="truncate font-mono text-[11px] text-muted-2">{bill.customer.customer_number}{bill.customer.meter_number ? ` · Meter ${bill.customer.meter_number}` : ""}</p>
+          </div>
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-paper text-muted-2 transition-all group-hover:bg-petrol group-hover:text-white">
+            <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
+          </span>
+        </Link>
+      </section>
+
+      <section className="flex flex-col">
+        <SectionHeading title="Ringkasan Tagihan" />
+        <div className="rounded-[14px] border border-line bg-card p-4">
           <div className="flex items-center gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-              <HugeiconsIcon icon={InvoiceIcon} size={21} />
+            <div className={cn(
+              "flex size-12 items-center justify-center rounded-[10px]",
+              bill.status === "overdue" ? "bg-coral-light text-coral" : "bg-aqua-light text-aqua"
+            )}>
+              <HugeiconsIcon icon={InvoiceIcon} size={22} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{bill.customer.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {bill.customer.customer_number}
-                {bill.customer.meter_number
-                  ? ` · Meter ${bill.customer.meter_number}`
-                  : ""}
+              <p className="font-mono text-[28px] font-bold text-petrol">{formatCurrency(bill.total_amount)}</p>
+              <p className="font-mono text-[10.5px] text-muted-2">
+                {statusDescription}
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              render={<Link href={`/customers/${bill.customer.id}`} />}
-            >
-              Detail
-              <HugeiconsIcon icon={ArrowRight01Icon} />
-            </Button>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 font-mono text-[9.5px] font-bold",
+                bill.status === "overdue" ? "bg-coral-light text-coral" :
+                bill.status === "paid" ? "bg-green-light text-green" :
+                bill.status === "unpaid" ? "bg-brass-light text-brass" :
+                "bg-muted text-muted-2"
+              )}>
+                {bill.status === "overdue" ? "TERLAMBAT" : STATUS_LABEL[bill.status].toUpperCase()}
+              </span>
+            </div>
           </div>
-
-          <div className="rounded-md bg-primary/5 px-4 py-5 ring-1 ring-primary/15">
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Total Tagihan
-            </p>
-            <p className="mt-1 text-3xl font-medium tracking-tight text-primary sm:text-4xl">
-              {formatCurrency(bill.total_amount)}
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-primary/10 pt-3 text-xs text-muted-foreground">
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-dashed border-line pt-3 font-mono text-[10.5px] text-muted-2">
+            <span className="flex items-center gap-1.5">
+              <HugeiconsIcon icon={Calendar01Icon} className="size-3.5" />
+              Periode {formatShortPeriod(bill.period)}
+            </span>
+            {bill.due_date && (
               <span className="flex items-center gap-1.5">
-                <HugeiconsIcon icon={Calendar01Icon} className="size-4" />
-                Periode {formatShortPeriod(bill.period.slice(0, 7))}
+                <HugeiconsIcon icon={Calendar01Icon} className="size-3.5" />
+                Jatuh tempo {formatDate(bill.due_date)}
               </span>
-              {bill.due_date && (
-                <span>Jatuh tempo {formatDate(bill.due_date)}</span>
-              )}
-            </div>
-            <p className="mt-2 text-xs font-medium text-foreground/80">
-              {statusDescription}
-            </p>
-          </div>
-        </CardContent>
-        {canPay && (
-          <CardFooter data-print-hide className="print:hidden">
-            <Button
-              className="w-full"
-              render={<Link href={`/payments/new?bill=${bill.id}`} />}
-            >
-              Catat Pembayaran
-            </Button>
-          </CardFooter>
-        )}
-      </Card>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card size="sm">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <HugeiconsIcon
-                icon={GaugeIcon}
-                className="size-4 text-muted-foreground"
-              />
-              Pencatatan Meter
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {reading ? (
-              <>
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                  <MeterValue
-                    label="Sebelumnya"
-                    value={reading.previous_reading}
-                  />
-                  <HugeiconsIcon
-                    icon={ArrowRight01Icon}
-                    className="size-4 text-muted-foreground"
-                  />
-                  <MeterValue
-                    label="Sekarang"
-                    value={reading.current_reading}
-                    align="right"
-                  />
-                </div>
-                <div className="flex items-end justify-between border-t pt-3">
-                  <span className="text-sm text-muted-foreground">Pemakaian</span>
-                  <span className="text-xl font-medium">
-                    {formatMeter(bill.usage)}
-                  </span>
-                </div>
-                {reading.photo_url && (
-                  <a
-                    href={reading.photo_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group relative mt-1 block overflow-hidden rounded-lg border bg-muted"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={reading.photo_url}
-                      alt={`Foto meter ${bill.customer.name}`}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-28 w-full object-cover transition-transform group-hover:scale-[1.02]"
-                    />
-                    <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-[11px] font-medium shadow-sm">
-                      <HugeiconsIcon icon={Camera01Icon} className="size-3.5" />
-                      Lihat Foto
-                    </span>
-                  </a>
-                )}
-              </>
-            ) : (
-              <div className="flex min-h-24 flex-col items-center justify-center rounded-lg bg-muted/50 px-4 text-center">
-                <p className="text-sm font-medium">Pencatatan tidak tersedia</p>
-                <p className="text-xs text-muted-foreground">
-                  Pemakaian tagihan: {formatMeter(bill.usage)}
-                </p>
-              </div>
             )}
-          </CardContent>
-        </Card>
-
-        <Card size="sm">
-          <CardHeader className="border-b">
-            <CardTitle>Rincian Biaya</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <CostRow label="Biaya air" value={bill.water_amount} />
-            <CostRow label="Abonemen" value={bill.monthly_fee} />
-            <div className="flex items-center justify-between border-t pt-3">
-              <span className="font-medium">Total</span>
-              <span className="text-lg font-medium">
-                {formatCurrency(bill.total_amount)}
-              </span>
+          </div>
+          {canManagePayment && (bill.status === "unpaid" || bill.status === "overdue") && (
+            <div className="mt-4" data-print-hide>
+              <Button className="w-full rounded-[10px] bg-petrol font-display text-[14px] font-semibold text-white hover:bg-petrol-2" render={<Link href={`/payments/new?bill=${bill.id}`} />}>
+                Catat Pembayaran
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </div>
+      </section>
+
+      <section className="flex flex-col">
+        <SectionHeading title="Pencatatan Meter" />
+        <div className="rounded-[14px] border border-line bg-card p-4">
+          {reading ? (
+            <>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <MeterValue label="Sebelumnya" value={reading.previous_reading} />
+                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4 text-muted-2" />
+                <MeterValue label="Sekarang" value={reading.current_reading} align="right" />
+              </div>
+              <div className="mt-3 flex items-end justify-between border-t border-dashed border-line pt-3">
+                <span className="font-mono text-[10.5px] text-muted-2">Pemakaian</span>
+                <span className="font-mono text-[18px] font-bold text-petrol">{formatMeter(bill.usage)} m³</span>
+              </div>
+              {reading.photo_url && (
+                <a
+                  href={reading.photo_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group relative mt-3 block overflow-hidden rounded-[12px] border border-line"
+                >
+                  <img
+                    src={reading.photo_url}
+                    alt={`Foto meter ${bill.customer.name}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-28 w-full object-cover transition-transform group-hover:scale-[1.02]"
+                  />
+                  <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-[11px] font-medium shadow-sm">
+                    <HugeiconsIcon icon={Camera01Icon} className="size-3.5" />
+                    Lihat Foto
+                  </span>
+                </a>
+              )}
+            </>
+          ) : (
+            <div className="flex min-h-24 flex-col items-center justify-center gap-3 rounded-[12px] border border-dashed border-line bg-paper/50 px-4 text-center">
+              <div className="flex size-10 items-center justify-center rounded-[10px] bg-muted text-muted-2">
+                <HugeiconsIcon icon={GaugeIcon} size={20} />
+              </div>
+              <p className="font-display text-[13px] font-semibold text-petrol">Pencatatan tidak tersedia</p>
+              <p className="font-mono text-[11px] text-muted-2">Pemakaian tagihan: {formatMeter(bill.usage)} m³</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="flex flex-col">
+        <SectionHeading title="Rincian Biaya" />
+        <div className="rounded-[14px] border border-line bg-card p-4">
+          <CostRow label="Biaya air" value={bill.water_amount} />
+          <CostRow label="Abonemen" value={bill.monthly_fee} />
+          <div className="mt-1 flex items-center justify-between border-t border-dashed border-line pt-3">
+            <span className="font-display text-[13px] font-semibold text-petrol">Total</span>
+            <span className="font-mono text-[18px] font-bold text-petrol">{formatCurrency(bill.total_amount)}</span>
+          </div>
+        </div>
+      </section>
 
       {payment && (
-        <Card size="sm">
-          <CardHeader className="border-b">
-            <CardTitle className="flex items-center gap-2">
-              <HugeiconsIcon
-                icon={BanknoteIcon}
-                className="size-4 text-muted-foreground"
-              />
-              Informasi Pembayaran
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            <DetailValue label="Tanggal" value={formatDate(payment.payment_date)} />
-            <DetailValue
-              label="Metode"
-              value={payment.payment_method === "cash" ? "Tunai" : "Transfer"}
-            />
-            <DetailValue label="Nominal" value={formatCurrency(payment.amount)} />
-            <DetailValue
-              label="Diterima oleh"
-              value={payment.receiver_name ?? "Petugas tidak diketahui"}
-            />
-            {payment.notes && (
-              <div className="sm:col-span-2">
-                <DetailValue label="Catatan" value={payment.notes} />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <section className="flex flex-col">
+          <SectionHeading title="Informasi Pembayaran" />
+          <div className="rounded-[14px] border border-line bg-card p-4">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <DetailValue label="Tanggal" value={formatDate(payment.payment_date)} />
+              <DetailValue label="Metode" value={payment.payment_method === "cash" ? "Tunai" : "Transfer"} />
+              <DetailValue label="Nominal" value={formatCurrency(payment.amount)} />
+              <DetailValue label="Diterima oleh" value={payment.receiver_name ?? "Petugas tidak diketahui"} />
+              {payment.notes && (
+                <div className="sm:col-span-2">
+                  <DetailValue label="Catatan" value={payment.notes} />
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
       )}
 
-      <div
-        data-print-hide
-        className="grid grid-cols-2 gap-2 print:hidden"
-      >
-          <Button
-            variant="outline"
-            render={
-              <a href={whatsappUrl} target="_blank" rel="noreferrer" />
-            }
-          >
-            <HugeiconsIcon icon={WhatsappIcon} />
-            Bagikan
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => window.print()}
-          >
-            <HugeiconsIcon icon={PrinterIcon} />
-            Cetak / PDF
-          </Button>
-      </div>
-
-      {(previousBill || nextBill) && (
-        <div
-          data-print-hide
-          className="grid grid-cols-2 gap-2 print:hidden"
-        >
-          {previousBill ? (
-            <BillNavigation bill={previousBill} direction="previous" />
-          ) : (
-            <div />
-          )}
-          {nextBill && <BillNavigation bill={nextBill} direction="next" />}
+      <section className="flex flex-col">
+        <SectionHeading title="Navigasi" linkLabel="Semua Tagihan" linkHref="/bills" />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <BillNavigation bill={previousBill} direction="previous" />
+          <BillNavigation bill={nextBill} direction="next" />
         </div>
-      )}
+      </section>
+
+      <div data-print-hide className="grid grid-cols-2 gap-2">
+        <Button variant="outline" className="rounded-[10px] border-line" render={<a href={whatsappUrl} target="_blank" rel="noreferrer" />}>
+          <HugeiconsIcon icon={WhatsappIcon} />
+          Bagikan
+        </Button>
+        <Button variant="outline" className="rounded-[10px] border-line" onClick={() => window.print()}>
+          <HugeiconsIcon icon={PrinterIcon} />
+          Cetak / PDF
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function BillHero({
+  status,
+  totalAmount,
+  dueDate,
+  payment,
+}: {
+  status: string;
+  totalAmount: number;
+  dueDate: string | null;
+  payment: PaymentDetail | null;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-[18px] bg-gradient-to-br from-petrol via-petrol-2 to-[#0b2e34] p-5 sm:p-6">
+      <div
+        className="absolute inset-0 opacity-60"
+        style={{
+          backgroundImage: "radial-gradient(rgba(255,255,255,0.09) 1px, transparent 1px)",
+          backgroundSize: "14px 14px",
+          maskImage: "linear-gradient(180deg, rgba(0,0,0,0.9), rgba(0,0,0,0.1))",
+          WebkitMaskImage: "linear-gradient(180deg, rgba(0,0,0,0.9), rgba(0,0,0,0.1))",
+        }}
+      />
+      <div className="absolute -top-[38px] -right-[38px] size-[170px] rounded-full border-[1.5px] border-aqua/35">
+        <div className="absolute inset-[22px] rounded-full border border-dashed border-brass/40" />
+      </div>
+      <div className="relative z-10 flex flex-col gap-3">
+        <span className="inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.06em] text-aqua">
+          <span className="size-1.5 rounded-full bg-aqua" />
+          Tagihan
+        </span>
+        <div className="flex items-center gap-2">
+          <p className="font-mono text-[28px] font-bold text-white">{formatCurrency(totalAmount)}</p>
+          <span className={cn(
+            "shrink-0 rounded-full px-2 py-0.5 font-mono text-[9.5px] font-bold",
+            status === "overdue" ? "bg-coral-light text-coral" :
+            status === "paid" ? "bg-green-light text-green" :
+            status === "unpaid" ? "bg-brass-light text-brass" :
+            "bg-muted text-muted-2"
+          )}>
+            {status === "overdue" ? "TERLAMBAT" : STATUS_LABEL[status].toUpperCase()}
+          </span>
+        </div>
+        <p className="max-w-[78%] text-[12.5px] leading-relaxed text-[#b9d4d0]">
+          {status === "paid"
+            ? payment
+              ? `Lunas pada ${formatDate(payment.payment_date)}`
+              : "Tagihan telah dibayar"
+            : status === "overdue" && dueDate
+              ? `Melewati jatuh tempo · Bayar sebelum ${formatDate(dueDate)}`
+              : dueDate
+                ? `Jatuh tempo ${formatDate(dueDate)}`
+                : "Tagihan belum dibayar"}
+        </p>
+      </div>
     </div>
   );
 }
@@ -319,26 +307,26 @@ function MeterValue({
 }) {
   return (
     <div className={align === "right" ? "text-right" : undefined}>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-0.5 font-medium">{formatMeter(value)}</p>
+      <p className="font-mono text-[10.5px] text-muted-2">{label}</p>
+      <p className="mt-0.5 font-mono text-[18px] font-semibold text-petrol">{formatMeter(value)}</p>
     </div>
   );
 }
 
 function CostRow({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{formatCurrency(value)}</span>
+    <div className="flex items-center justify-between border-b border-dashed border-line py-2">
+      <span className="text-[12.5px] text-muted-2">{label}</span>
+      <span className="font-mono text-[15px] font-semibold text-petrol">{formatCurrency(value)}</span>
     </div>
   );
 }
 
 function DetailValue({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-0.5 text-sm font-medium">{value}</p>
+    <div className="rounded-[10px] bg-paper/80 p-3">
+      <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.04em] text-muted-text">{label}</p>
+      <p className="mt-0.5 font-display text-[13px] font-semibold text-petrol">{value}</p>
     </div>
   );
 }
@@ -347,25 +335,33 @@ function BillNavigation({
   bill,
   direction,
 }: {
-  bill: AdjacentBill;
+  bill: AdjacentBill | null;
   direction: "previous" | "next";
 }) {
+  if (!bill) return <div />;
+
   const previous = direction === "previous";
   return (
-    <Button
-      variant="outline"
-      className={previous ? "justify-start" : "justify-end"}
-      render={<Link href={`/bills/${bill.id}`} />}
+    <Link
+      href={`/bills/${bill.id}`}
+      className={cn(
+        "relative flex items-center gap-3 overflow-hidden rounded-[14px] border border-line bg-card py-3.5 pr-3 pl-4 transition-all hover:-translate-y-0.5 hover:border-petrol/30 hover:shadow-md",
+        previous ? "justify-start" : "justify-end"
+      )}
     >
-      {previous && <HugeiconsIcon icon={ArrowLeft01Icon} />}
-      <span className={previous ? "text-left" : "text-right"}>
-        <span className="block text-[10px] font-normal text-muted-foreground">
-          {previous ? "Sebelumnya" : "Berikutnya"}
+      <span className="absolute top-0 bottom-0 left-0 w-1 bg-aqua/60" />
+      <span aria-hidden className="absolute inset-x-0 top-0 border-t border-dashed border-line" />
+      <span aria-hidden className="absolute inset-x-0 bottom-0 border-t border-dashed border-line" />
+      <div className="flex items-center gap-3">
+        <span className={cn("flex size-6 items-center justify-center rounded-full", previous ? "bg-aqua-light text-aqua" : "bg-brass-light text-brass")}>
+          <HugeiconsIcon icon={previous ? ArrowLeft01Icon : ArrowRight01Icon} size={18} />
         </span>
-        {formatShortPeriod(bill.period.slice(0, 7))}
-      </span>
-      {!previous && <HugeiconsIcon icon={ArrowRight01Icon} />}
-    </Button>
+        <div className="min-w-0">
+          <p className="truncate font-mono text-[10px] text-muted-2">{previous ? "SEBELUMNYA" : "BERIKUTNYA"}</p>
+          <p className="truncate font-display text-[13px] font-semibold text-petrol">{formatShortPeriod(bill.period)}</p>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -398,7 +394,7 @@ function getWhatsappUrl(bill: BillWithCustomer): string {
   const message = [
     `Tagihan air ${bill.customer.name}`,
     `No. pelanggan: ${bill.customer.customer_number}`,
-    `Periode: ${formatShortPeriod(bill.period.slice(0, 7))}`,
+    `Periode: ${formatShortPeriod(bill.period)}`,
     `Total: ${formatCurrency(bill.total_amount)}`,
     bill.due_date ? `Jatuh tempo: ${formatDate(bill.due_date)}` : null,
     `Status: ${STATUS_LABEL[bill.status]}`,

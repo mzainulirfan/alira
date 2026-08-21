@@ -269,6 +269,7 @@ export function ReadingForm({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
+        nativeButton={!trigger}
         render={
           trigger ?? (
             <Button

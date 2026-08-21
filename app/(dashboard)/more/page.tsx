@@ -14,14 +14,15 @@ import {
   UserGroupIcon,
   UserIcon,
   QrCodeIcon,
+  ArrowLeft01Icon,
 } from "@hugeicons/core-free-icons";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { verifySession } from "@/lib/auth/dal";
 import { getAppSettings } from "@/lib/data/settings";
 import { normalizeQuickActionKeys } from "@/lib/quick-actions";
 import { canManageFinance } from "@/lib/staff";
 import { LogoutButton } from "./logout-button";
+import { SectionHeading } from "@/components/dashboard/section-heading";
 
 export const metadata: Metadata = {
   title: "Lainnya",
@@ -122,30 +123,39 @@ export default async function MorePage() {
   const visibleShortcuts = canManageFinance(session.role) ? shortcutItems : [];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-medium">Lainnya</h1>
-        <p className="text-sm text-muted-foreground">
-          Kelola aplikasi dan akses tambahan
-        </p>
+    <div className="flex flex-col gap-5">
+      <div className="flex items-end justify-between gap-3">
+        <Link href="/dashboard" className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-aqua-light text-aqua transition-colors hover:bg-aqua/80">
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={22} />
+        </Link>
+        <div>
+          <h1 className="font-display text-[26px] font-bold leading-[32px] text-petrol sm:text-[30px] sm:leading-[38px]">
+            Lainnya
+          </h1>
+          <p className="mt-0.5 text-[12.5px] font-medium text-muted-text">
+            Kelola aplikasi dan akses tambahan
+          </p>
+        </div>
       </div>
 
-      <Card>
-        <CardContent className="flex flex-col gap-1 p-2">
+      <section className="flex flex-col">
+        <SectionHeading title="Pengaturan" />
+        <div className="rounded-[14px] border border-line bg-card p-2">
           {settingsItems.map((item) => (
             <MenuItem key={item.href} {...item} />
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {visibleShortcuts.length > 0 && (
-        <Card>
-          <CardContent className="flex flex-col gap-1 p-2">
+        <section className="flex flex-col">
+          <SectionHeading title="Pintasan Cepat" />
+          <div className="rounded-[14px] border border-line bg-card p-2">
             {visibleShortcuts.map((item) => (
               <MenuItem key={item.href} {...item} />
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       )}
 
       <LogoutButton />
@@ -169,20 +179,22 @@ function MenuItem({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted"
+      className="group relative flex items-center gap-3 overflow-hidden rounded-[12px] border border-transparent bg-transparent py-2.5 pr-2 pl-3 transition-all hover:border-petrol/30 hover:bg-petrol/3"
     >
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+      <span className="absolute top-0 bottom-0 left-0 w-1 bg-aqua/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-[9px] bg-aqua-light text-aqua transition-colors group-hover:bg-petrol group-hover:text-white">
         <HugeiconsIcon icon={icon} className="size-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="truncate text-xs text-muted-foreground">{description}</p>
+        <p className="truncate font-display text-[13px] font-semibold text-petrol">{title}</p>
+        <p className="truncate font-mono text-[10.5px] text-muted-2">{description}</p>
       </div>
-      {badge && <Badge variant="secondary">{badge}</Badge>}
-      <HugeiconsIcon
-        icon={ArrowRight01Icon}
-        className="size-4 shrink-0 text-muted-foreground"
-      />
+      {badge && (
+        <span className="shrink-0 rounded-full bg-brass-light px-2 py-0.5 font-mono text-[10px] font-bold text-brass">{badge}</span>
+      )}
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-paper text-muted-2 transition-all group-hover:bg-petrol group-hover:text-white">
+        <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
+      </span>
     </Link>
   );
 }

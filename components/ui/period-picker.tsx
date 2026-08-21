@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSyncExternalStore } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar01Icon } from "@hugeicons/core-free-icons";
 import { formatShortPeriodLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-function monthOptions(): { value: string; label: string }[] {
+function getMonthOptions(): { value: string; label: string }[] {
   const options: { value: string; label: string }[] = [];
   const now = new Date();
   for (let i = 0; i < 12; i++) {
@@ -15,6 +16,14 @@ function monthOptions(): { value: string; label: string }[] {
     options.push({ value, label: formatShortPeriodLabel(value) });
   }
   return options;
+}
+
+function useMounted() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 }
 
 export function PeriodPicker({
@@ -28,7 +37,8 @@ export function PeriodPicker({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const options = monthOptions();
+  const mounted = useMounted();
+  const options = mounted ? getMonthOptions() : [{ value: "", label: "..." }];
 
   function changePeriod(next: string) {
     const sp = new URLSearchParams(searchParams.toString());

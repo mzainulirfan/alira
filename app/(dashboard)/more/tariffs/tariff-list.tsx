@@ -13,11 +13,9 @@ import {
   DiscountTag01Icon,
   InvoiceIcon,
 } from "@hugeicons/core-free-icons";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +36,7 @@ import {
 } from "@/app/actions/settings";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Tariff } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const noState: TariffFormState = {};
 
@@ -45,18 +44,16 @@ export function TariffList({ tariffs }: { tariffs: Tariff[] }) {
   const activeTariff = tariffs.find((t) => t.is_active) ?? null;
   const inactiveTariffs = tariffs.filter((t) => !t.is_active);
 
+  if (tariffs.length === 0) {
+    return <EmptyTariffState />;
+  }
+
   return (
     <div className="flex flex-col gap-3">
-      {tariffs.length === 0 ? (
-        <EmptyTariffState />
-      ) : (
-        <div className="flex flex-col gap-3">
-          {activeTariff && <TariffCard tariff={activeTariff} hasActive />}
-          {inactiveTariffs.map((t) => (
-            <TariffCard key={t.id} tariff={t} hasActive={!!activeTariff} />
-          ))}
-        </div>
-      )}
+      {activeTariff && <TariffCard tariff={activeTariff} hasActive />}
+      {inactiveTariffs.map((t) => (
+        <TariffCard key={t.id} tariff={t} hasActive={!!activeTariff} />
+      ))}
     </div>
   );
 }
@@ -69,65 +66,92 @@ function TariffCard({
   hasActive: boolean;
 }) {
   return (
-    <Card className={tariff.is_active ? "border-success/30" : undefined}>
-      <CardContent className="flex flex-col gap-3 py-3">
-        <div className="flex items-center gap-3">
-          <div className={tariff.is_active ? "shrink-0 text-success" : "shrink-0 text-muted-foreground"}>
+    <div className="group relative overflow-hidden rounded-[14px] border border-line bg-card py-4 pr-3 pl-4 transition-all hover:-translate-y-0.5 hover:border-petrol/30 hover:shadow-md">
+      <span
+        className={cn(
+          "absolute top-0 bottom-0 left-0 w-1",
+          tariff.is_active ? "bg-aqua" : "bg-muted"
+        )}
+      />
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 border-t border-dashed border-line"
+      />
+      <span
+        aria-hidden
+        className="absolute inset-x-0 bottom-0 border-t border-dashed border-line"
+      />
+
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-[10px]",
+              tariff.is_active ? "bg-aqua-light text-aqua" : "bg-muted text-muted-2"
+            )}
+          >
             <HugeiconsIcon icon={Coins01Icon} size={20} />
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <p className="truncate font-medium">{tariff.name}</p>
-              <Badge
-                variant={tariff.is_active ? "success" : "secondary"}
-                className="shrink-0"
-              >
-                {tariff.is_active ? "Aktif" : "Nonaktif"}
-              </Badge>
+              <p className="truncate font-display text-[15px] font-semibold text-petrol">
+                {tariff.name}
+              </p>
+              {tariff.is_active && (
+                <span className="shrink-0 rounded-full bg-aqua-light px-2 py-0.5 font-mono text-[10px] font-bold text-aqua">
+                  AKTIF
+                </span>
+              )}
             </div>
             {tariff.effective_date && (
-              <p className="text-xs text-muted-foreground">
+              <p className="mt-0.5 flex items-center gap-1 font-mono text-[11px] text-muted-2">
+                <HugeiconsIcon icon={Calendar03Icon} className="size-3" />
                 Berlaku {formatDate(tariff.effective_date)}
               </p>
             )}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="text-base font-medium">
-            {formatCurrency(tariff.price_per_m3)}
-            <span className="text-xs font-normal text-muted-foreground"> / m³</span>
-          </span>
-          <span className="text-sm text-muted-foreground">
-            Abonemen {formatCurrency(tariff.monthly_fee)}
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <TariffForm tariff={tariff} />
           <ToggleTariff tariff={tariff} hasActive={hasActive} />
           {!tariff.is_active && <DeleteTariff tariff={tariff} />}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div className="relative mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-t border-dashed border-line pt-3">
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-mono text-[18px] font-bold text-petrol">
+            {formatCurrency(tariff.price_per_m3)}
+          </span>
+          <span className="font-mono text-[11px] text-muted-2">/ m³</span>
+        </div>
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-mono text-[13px] font-medium text-muted-text">
+            {formatCurrency(tariff.monthly_fee)}
+          </span>
+          <span className="font-mono text-[11px] text-muted-2">/ bln</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
 function EmptyTariffState() {
   return (
-    <Card>
-      <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-        <div className="flex size-12 items-center justify-center rounded-md bg-muted">
-          <HugeiconsIcon icon={Coins01Icon} size={24} className="text-muted-foreground" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <p className="font-medium">Belum ada tarif</p>
-          <p className="text-sm text-muted-foreground">
-            Tambahkan tarif pertama agar tagihan dapat dibuat.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex flex-col items-center justify-center gap-3 rounded-[18px] border border-dashed border-line bg-card py-16 text-center">
+      <div className="flex size-12 items-center justify-center rounded-[12px] bg-muted text-muted-2">
+        <HugeiconsIcon icon={Coins01Icon} size={24} />
+      </div>
+      <div>
+        <p className="font-display text-[15px] font-bold text-petrol">
+          Belum ada tarif
+        </p>
+        <p className="text-[13px] text-muted-2">
+          Tambahkan tarif pertama agar tagihan dapat dibuat.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -238,7 +262,15 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant={isEdit ? "ghost" : "default"} size={isEdit ? "sm" : "default"} />}>
+      <DialogTrigger
+        render={
+          <Button
+            variant={isEdit ? "ghost" : "default"}
+            size={isEdit ? "sm" : "default"}
+            className={isEdit ? "h-8 px-2" : ""}
+          />
+        }
+      >
         {isEdit ? (
           <>
             <HugeiconsIcon icon={Edit01Icon} />
@@ -247,13 +279,13 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
         ) : (
           <>
             <HugeiconsIcon icon={Add01Icon} />
-            Tambah Tarif
+            Tambah
           </>
         )}
       </DialogTrigger>
       <DialogContent
         initialFocus={() => nameRef.current}
-        className="max-h-[calc(100%-2rem)] overflow-y-auto sm:max-w-lg"
+        className="max-h-[calc(100%-2rem)] overflow-y-auto sm:max-w-md"
       >
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Tarif" : "Tambah Tarif"}</DialogTitle>
@@ -363,9 +395,9 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
             <input type="hidden" name="is_active" value="true" />
           )}
           {(!isEdit || !tariff.is_active) && (
-            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm">
-              <span className="flex items-center gap-2 font-medium">
-                <HugeiconsIcon icon={PowerIcon} className="size-4 text-muted-foreground" />
+            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[10px] border border-line bg-aqua-light/30 px-3 py-2.5 text-sm">
+              <span className="flex items-center gap-2 font-medium text-petrol">
+                <HugeiconsIcon icon={PowerIcon} className="size-4" />
                 Jadikan tarif aktif
               </span>
               <input
@@ -391,12 +423,12 @@ export function TariffForm({ tariff }: { tariff?: Tariff }) {
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm">
-           <ConfirmationDialogHeader
-             icon={Edit01Icon}
-             tone="warning"
-             title="Perubahan belum disimpan"
-             description="Jika ditutup sekarang, perubahan tarif akan hilang."
-           />
+          <ConfirmationDialogHeader
+            icon={Edit01Icon}
+            tone="warning"
+            title="Perubahan belum disimpan"
+            description="Jika ditutup sekarang, perubahan tarif akan hilang."
+          />
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               Lanjut Mengisi
@@ -443,28 +475,31 @@ function ToggleTariff({
       </form>
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="sm"
+        className={cn(
+          "h-8 px-2",
+          isActive ? "text-muted-text hover:text-destructive" : "text-aqua hover:bg-aqua-light"
+        )}
         onClick={() => (needsConfirm ? setConfirmOpen(true) : handleSubmit())}
       >
-        <HugeiconsIcon icon={PowerIcon} />
-        {isActive ? "Nonaktifkan" : "Aktifkan"}
+        <HugeiconsIcon icon={PowerIcon} className="size-4" />
       </Button>
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm">
-           <ConfirmationDialogHeader
-             icon={PowerIcon}
-             tone="success"
-             title="Jadikan tarif ini aktif?"
-             description="Tarif aktif saat ini akan dinonaktifkan dan digantikan dengan tarif berikut."
-           />
-           <ConfirmationDialogSummary>
-             <p className="font-medium">{tariff.name}</p>
-             <p className="mt-1 text-xs text-muted-foreground">
-               {formatCurrency(tariff.price_per_m3)}/m³ · Abonemen{" "}
-               {formatCurrency(tariff.monthly_fee)}
-             </p>
-           </ConfirmationDialogSummary>
+          <ConfirmationDialogHeader
+            icon={PowerIcon}
+            tone="success"
+            title="Jadikan tarif ini aktif?"
+            description="Tarif aktif saat ini akan dinonaktifkan dan digantikan dengan tarif berikut."
+          />
+          <ConfirmationDialogSummary>
+            <p className="font-medium">{tariff.name}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {formatCurrency(tariff.price_per_m3)}/m³ · Abonemen{" "}
+              {formatCurrency(tariff.monthly_fee)}
+            </p>
+          </ConfirmationDialogSummary>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               Batal
@@ -498,29 +533,29 @@ function DeleteTariff({ tariff }: { tariff: Tariff }) {
       </form>
       <Button
         type="button"
-        variant="destructive"
+        variant="ghost"
         size="sm"
+        className="h-8 px-2 text-muted-text hover:text-destructive"
         title="Hapus tarif"
         onClick={() => setConfirmOpen(true)}
       >
-        <HugeiconsIcon icon={Delete01Icon} />
-        Hapus
+        <HugeiconsIcon icon={Delete01Icon} className="size-4" />
       </Button>
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-sm">
-           <ConfirmationDialogHeader
-             icon={Delete01Icon}
-             tone="destructive"
-             title="Hapus tarif?"
-             description="Tarif tidak dapat dikembalikan setelah dihapus."
-           />
-           <ConfirmationDialogSummary>
-             <p className="font-medium">{tariff.name}</p>
-             <p className="mt-1 text-xs text-muted-foreground">
-               {formatCurrency(tariff.price_per_m3)}/m³ · Abonemen{" "}
-               {formatCurrency(tariff.monthly_fee)}
-             </p>
-           </ConfirmationDialogSummary>
+          <ConfirmationDialogHeader
+            icon={Delete01Icon}
+            tone="destructive"
+            title="Hapus tarif?"
+            description="Tarif tidak dapat dikembalikan setelah dihapus."
+          />
+          <ConfirmationDialogSummary>
+            <p className="font-medium">{tariff.name}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {formatCurrency(tariff.price_per_m3)}/m³ · Abonemen{" "}
+              {formatCurrency(tariff.monthly_fee)}
+            </p>
+          </ConfirmationDialogSummary>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               Batal

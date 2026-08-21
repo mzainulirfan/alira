@@ -2,18 +2,21 @@
 
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
   Cancel01Icon,
   PrinterIcon,
   QrCodeIcon,
   Search01Icon,
 } from "@hugeicons/core-free-icons";
-import { SubPageHeader } from "@/components/layout/sub-page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { createCustomerQrPayload } from "@/lib/customer-qr";
 import type { Customer } from "@/lib/types";
+import { SectionHeading } from "@/components/dashboard/section-heading";
 
 export function CustomerQrClient({ customers }: { customers: Customer[] }) {
   const [search, setSearch] = useState("");
@@ -52,102 +55,108 @@ export function CustomerQrClient({ customers }: { customers: Customer[] }) {
   }
 
   return (
-    <div data-qr-print-page className="flex flex-col gap-4">
-      <div data-print-hide>
-        <SubPageHeader
-          title="QR Pelanggan"
-          description={`${selected.size} dari ${customers.length} pelanggan dipilih`}
-          action={
-            <Button
-              disabled={selected.size === 0}
-              onClick={() => window.print()}
-            >
-              <HugeiconsIcon icon={PrinterIcon} />
-              Cetak
-            </Button>
-          }
-        />
-      </div>
-
-      <div data-print-hide className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-52 flex-1">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Cari nama, pelanggan, atau meter..."
-            className="h-11 w-full rounded-sm border border-border bg-card pr-9 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              aria-label="Reset filter"
-              className="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
-            </button>
-          )}
+    <div data-qr-print-page className="flex flex-col gap-5">
+      <div className="flex items-end justify-between gap-3">
+        <Link href="/more" className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-aqua-light text-aqua transition-colors hover:bg-aqua/80">
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={22} />
+        </Link>
+        <div>
+          <h1 className="font-display text-[26px] font-bold leading-[32px] text-petrol sm:text-[30px] sm:leading-[38px]">
+            QR Pelanggan
+          </h1>
+          <p className="mt-0.5 text-[12.5px] font-medium text-muted-text">
+            {selected.size} dari {customers.length} pelanggan dipilih
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={toggleAllFiltered}>
-          {filtered.length > 0 && filtered.every((customer) => selected.has(customer.id))
-            ? "Batalkan Pilihan"
-            : "Pilih Semua"}
+        <Button variant="outline" className="rounded-[10px] border-line" onClick={() => window.print()}>
+          <HugeiconsIcon icon={PrinterIcon} /> Cetak
         </Button>
-        {search && (
-          <Button variant="outline" size="sm" onClick={() => setSearch("")}>
-            Reset Filter
-          </Button>
-        )}
       </div>
 
-      <div data-print-hide className="flex flex-col gap-2">
-        {filtered.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
-              <HugeiconsIcon icon={QrCodeIcon} className="size-7 text-muted-foreground" />
-              <p className="font-medium">Pelanggan tidak ditemukan</p>
-              <p className="text-sm text-muted-foreground">
-                Coba nama atau nomor pelanggan lainnya.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          filtered.map((customer) => (
-            <label key={customer.id} className="cursor-pointer">
-              <Card className={selected.has(customer.id) ? "border-primary/40 bg-primary/5" : undefined}>
-                <CardContent className="flex items-center gap-3 py-3">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(customer.id)}
-                    onChange={() => toggleCustomer(customer.id)}
-                    className="size-4 accent-primary"
-                  />
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                    <HugeiconsIcon icon={QrCodeIcon} className="size-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{customer.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {customer.customer_number}
-                      {customer.meter_number ? ` · Meter ${customer.meter_number}` : ""}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </label>
-          ))
-        )}
-      </div>
+      <section className="flex flex-col">
+        <SectionHeading title="Pilih Pelanggan" />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative min-w-52 flex-1">
+            <HugeiconsIcon
+              icon={Search01Icon}
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-2"
+            />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Cari nama, pelanggan, atau meter..."
+              className="h-11 w-full rounded-[10px] border border-line bg-card pr-9 pl-9 text-sm outline-none placeholder:text-muted-2 focus-visible:border-aqua focus-visible:ring-3 focus-visible:ring-aqua/20"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Reset filter"
+                className="absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-2 hover:bg-aqua-light hover:text-petrol"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+              </button>
+            )}
+          </div>
+          <Button variant="outline" size="sm" className="rounded-[10px] border-line" onClick={toggleAllFiltered}>
+            {filtered.length > 0 && filtered.every((customer) => selected.has(customer.id))
+              ? "Batalkan Pilihan"
+              : "Pilih Semua"}
+          </Button>
+          {search && <Button variant="outline" size="sm" className="rounded-[10px] border-line" onClick={() => setSearch("")}>Reset Filter</Button>}
+        </div>
+      </section>
+
+      {filtered.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <section className="flex flex-col">
+          <SectionHeading title="Daftar Pelanggan" />
+          <div className="rounded-[14px] border border-line bg-card divide-y divide-dashed divide-line">
+            {filtered.map((customer) => (
+              <label key={customer.id} className="cursor-pointer group relative flex items-center gap-3 overflow-hidden rounded-[14px] border border-transparent bg-transparent py-3.5 pr-3 pl-4 transition-all hover:border-petrol/30 hover:bg-petrol/3">
+                <span className="absolute top-0 bottom-0 left-0 w-1 bg-brass opacity-0 group-hover:opacity-100 transition-opacity" />
+                <input
+                  type="checkbox"
+                  checked={selected.has(customer.id)}
+                  onChange={() => toggleCustomer(customer.id)}
+                  className="size-4 shrink-0 accent-primary"
+                />
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-aqua-light text-aqua transition-colors group-hover:bg-petrol group-hover:text-white">
+                  <HugeiconsIcon icon={QrCodeIcon} size={20} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-display text-[13.5px] font-semibold text-petrol">{customer.name}</p>
+                  <p className="truncate font-mono text-[11px] text-muted-2">{customer.customer_number}{customer.meter_number ? ` · Meter ${customer.meter_number}` : ""}</p>
+                </div>
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-paper text-muted-2 transition-all group-hover:bg-petrol group-hover:text-white">
+                  <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
+                </span>
+              </label>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div data-qr-print-grid className="hidden">
         {selectedCustomers.map((customer) => (
           <QrPrintLabel key={customer.id} customer={customer} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 rounded-[18px] border border-dashed border-line bg-card py-16 text-center">
+      <div className="flex size-12 items-center justify-center rounded-[12px] bg-aqua-light text-aqua">
+        <HugeiconsIcon icon={QrCodeIcon} size={24} />
+      </div>
+      <div>
+        <p className="font-display text-[15px] font-bold text-petrol">Pelanggan tidak ditemukan</p>
+        <p className="text-[13px] text-muted-2">Coba nama atau nomor pelanggan lainnya.</p>
       </div>
     </div>
   );
@@ -163,12 +172,12 @@ function QrPrintLabel({ customer }: { customer: Customer }) {
         marginSize={1}
         title={`QR ${customer.customer_number}`}
       />
-      <p className="mt-2 font-medium">{customer.name}</p>
+      <p className="mt-2 font-display text-[13px] font-semibold text-petrol">{customer.name}</p>
       <p className="font-mono text-xs font-medium">{customer.customer_number}</p>
-      <p className="mt-0.5 text-[10px] text-slate-600">
+      <p className="mt-0.5 text-[10px] text-muted-2">
         {customer.meter_number ? `Meter ${customer.meter_number}` : "Tanpa nomor meter"}
       </p>
-      <p className="mt-1 text-[9px] font-medium tracking-wide text-slate-500 uppercase">
+      <p className="mt-1 text-[9px] font-medium tracking-wide text-muted-2 uppercase">
         Scan dengan Alira
       </p>
     </div>
