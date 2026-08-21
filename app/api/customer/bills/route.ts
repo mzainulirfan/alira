@@ -3,18 +3,27 @@ import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { getCustomerSession } from "@/lib/auth/customer-jwt";
 
+function noStoreHeaders(headers?: Record<string, string>): Record<string, string> {
+  return { "Cache-Control": "private, no-store, max-age=0, must-revalidate", ...(headers ?? {}) };
+}
+
 export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get("customer_session")?.value;
 
-  if (!token) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Support __Host- prefix migration
+  const tokenLegacy = cookieStore.get("customer_session")?.value ?? null;
+  const tokenHost = cookieStore.get("__Host-customer_session")?.value ?? null;
+  const rawToken = token ?? tokenLegacy ?? tokenHost;
+
+  if (!rawToken) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: noStoreHeaders() });
   }
 
   const session = await getCustomerSession();
 
   if (!session) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    return NextResponse.json({ error: "Invalid session" }, { status: 401, headers: noStoreHeaders() });
   }
 
   const supabase = createSupabaseAdmin();
@@ -26,7 +35,7 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
 
   if (profileError || !profile) {
-    return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    return NextResponse.json({ error: "Invalid session" }, { status: 401, headers: noStoreHeaders() });
   }
 
   const { searchParams } = new URL(request.url);
@@ -50,10 +59,10 @@ export async function GET(request: NextRequest) {
 
   const { data, error, count } = await query;
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500, headers: noStoreHeaders() });
   }
 
-  return NextResponse.json({ data: data as Bill[], total: count ?? 0, page, limit });
+  return NextResponse.json({ data: data as Bill[], total: count ?? 0, page, limit }, { headers: noStoreHeaders() });
 }
 
 interface Bill {

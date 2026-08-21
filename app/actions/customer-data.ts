@@ -57,11 +57,13 @@ async function getDashboardDataForCustomer(customerId: string): Promise<Dashboar
   };
 }
 
-const getDashboardDataForCustomerCached = unstable_cache(
-  getDashboardDataForCustomer,
-  ["customer-dashboard"],
-  { revalidate: 60, tags: ["customer-dashboard"] }
-);
+async function getDashboardDataForCustomerCached(customerId: string): Promise<DashboardData> {
+  const cached = unstable_cache(getDashboardDataForCustomer, ["customer-dashboard", customerId], {
+    revalidate: 60,
+    tags: [`customer-dashboard:${customerId}`],
+  });
+  return cached(customerId);
+}
 
 export async function getCustomerDashboardData(customerId: string): Promise<DashboardData> {
   const profile = await getCurrentCustomerProfile();

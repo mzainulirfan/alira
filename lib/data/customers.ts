@@ -66,7 +66,8 @@ export const getCustomerById = cache(async (id: string) => {
 });
 
 function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, "\\$&");
+  // Escape PostgREST or-filter special chars: , ( ) " plus LIKE wildcards
+  return value.replace(/[\\%_,()"]/g, "\\$&");
 }
 
 const CUSTOMER_COLUMNS =
@@ -117,7 +118,9 @@ export async function getCustomersPage({
     queryBuilder = queryBuilder.gt("customer_number", cursor);
   }
   if (query.trim()) {
-    const q = escapeLike(query.trim());
+    const raw = query.trim().slice(0, 64);
+    const q = escapeLike(raw);
+    // Use escaped pattern with PostgREST or filter — commas/parens now escaped to prevent injection
     queryBuilder = queryBuilder.or(
       `name.ilike.%${q}%,customer_number.ilike.%${q}%,meter_number.ilike.%${q}%`
     );

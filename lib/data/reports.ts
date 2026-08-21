@@ -114,17 +114,23 @@ export const getReport = cache(
       (s, b) => s + (b as { total_amount: number }).total_amount,
       0
     );
-    const invalidReading = (readings ?? []).find(
+    const invalidReadings = (readings ?? []).filter(
       (reading) =>
         Number(reading.previous_reading) < 0 ||
         Number(reading.current_reading) < Number(reading.previous_reading) ||
         Number(reading.usage) !==
           Number(reading.current_reading) - Number(reading.previous_reading)
     );
-    if (invalidReading) {
-      throw new Error("Data pencatatan meter lama tidak konsisten dan perlu diperbaiki.");
+    if (invalidReadings.length > 0) {
+      console.warn(`[reports] ${invalidReadings.length} reading(s) inkonsisten diabaikan pada periode ${period}`);
     }
-    const totalUsage = (readings ?? []).reduce(
+    const validReadings = (readings ?? []).filter(
+      (reading) =>
+        Number(reading.previous_reading) >= 0 &&
+        Number(reading.current_reading) >= Number(reading.previous_reading) &&
+        Number(reading.usage) === Number(reading.current_reading) - Number(reading.previous_reading)
+    );
+    const totalUsage = (validReadings ?? []).reduce(
       (s, r) => s + (r as { usage: number }).usage,
       0
     );

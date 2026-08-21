@@ -48,19 +48,19 @@ export async function authenticateCustomer(
     return { error: "Terjadi kesalahan server. Coba lagi nanti." };
   }
   if (!customer) {
+    // Timing mitigation: dummy bcrypt compare to equalize response time
+    await compare(passcode, "$2b$12$0000000000000000000000u0000000000000000000000000000000");
     return { error: "Nomor pelanggan atau passcode salah." };
   }
 
-  // Cek lockout
+  // Cek lockout — generic message to avoid enumeration
   if (customer.locked_until && new Date(customer.locked_until) > new Date()) {
-    const minutesLeft = Math.ceil(
-      (new Date(customer.locked_until).getTime() - Date.now()) / 60000
-    );
-    return { error: `Terlalu banyak percobaan gagal. Coba lagi ${minutesLeft} menit.` };
+    return { error: "Nomor pelanggan atau passcode salah." };
   }
 
   // Verifikasi passcode
   if (!customer.passcode_hash) {
+    await compare(passcode, "$2b$12$0000000000000000000000u0000000000000000000000000000000");
     return { error: "Nomor pelanggan atau passcode salah." };
   }
   if (!(await compare(passcode, customer.passcode_hash))) {
@@ -94,7 +94,7 @@ export async function authenticateCustomer(
 
   try {
     const newSessionEpoch = crypto.randomUUID();
-    const { error: updateError } = await supabase
+    const { data: updData, error: updateError } = await supabase
       .from("pam_customers")
       .update({
         failed_attempts: 0,
@@ -102,10 +102,16 @@ export async function authenticateCustomer(
         last_login_at: new Date().toISOString(),
         session_epoch: newSessionEpoch,
       })
-      .eq("id", customer.id);
+      .eq("id", customer.id)
+      .eq("passcode_hash", customer.passcode_hash)
+      .select("id")
+      .maybeSingle();
     if (updateError) {
-      console.error("[customer-login] gagal update sesi login:", updateError.message);
+      console.error("[customer-login] gagal update sesi login:", (updateError as { message?: string })?.message ?? String(updateError));
       return { error: "Terjadi kesalahan server. Coba lagi nanti." };
+    }
+    if (!updData) {
+      return { error: "Nomor pelanggan atau passcode salah." };
     }
 
     await logLoginAttempt(customer.id, true);
@@ -145,7 +151,8 @@ export async function logoutCustomerAction() {
     await supabase
       .from("pam_customers")
       .update({ session_epoch: crypto.randomUUID() })
-      .eq("id", session.customerId);
+      .eq("id", session.customerId)
+      .eq("session_epoch", session.sessionEpoch);
   }
   await deleteCustomerSession();
   redirect("/login");
@@ -197,17 +204,23 @@ export async function changePasscodeAction(
   const newHash = await hash(newPasscode, 12);
   const newSessionEpoch = crypto.randomUUID();
 
-  const { error: updateError } = await supabase
+  const { data: upd, error: updateError } = await supabase
     .from("pam_customers")
     .update({
       passcode_hash: newHash,
       must_change_passcode: false,
       session_epoch: newSessionEpoch,
     })
-    .eq("id", session.customerId);
-
+    .eq("id", session.customerId)
+    .eq("session_epoch", session.sessionEpoch)
+    .eq("passcode_hash", customer.passcode_hash)
+    .select("id")
+    .maybeSingle();
   if (updateError) {
     return { error: "Gagal mengubah passcode. Coba lagi." };
+  }
+  if (!upd) {
+    return { error: "Sesi tidak valid atau data berubah. Silakan login ulang." };
   }
 
   // Update session dengan epoch baru

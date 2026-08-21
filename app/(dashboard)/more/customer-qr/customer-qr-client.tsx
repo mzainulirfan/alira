@@ -13,7 +13,6 @@ import {
   Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { createCustomerQrPayload } from "@/lib/customer-qr";
 import type { Customer } from "@/lib/types";
 import { SectionHeading } from "@/components/dashboard/section-heading";

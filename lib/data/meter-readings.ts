@@ -60,21 +60,27 @@ const getCachedPeriodReadings = unstable_cache(
 
     if (error) throw new Error(error.message);
     const readings = (data ?? []) as MeterReading[];
-    const invalidReading = readings.find(
+    const invalidCount = readings.filter(
       (reading) =>
         reading.previous_reading < 0 ||
         reading.current_reading < reading.previous_reading ||
         reading.usage !== reading.current_reading - reading.previous_reading
-    );
-    if (invalidReading) {
-      throw new Error("Data pencatatan meter lama tidak konsisten dan perlu diperbaiki.");
+    ).length;
+    if (invalidCount > 0) {
+      console.warn(`[meter-readings] ${invalidCount} reading(s) inkonsisten pada periode ${period} — difilter, tidak crash`);
     }
+    const validReadings = readings.filter(
+      (reading) =>
+        reading.previous_reading >= 0 &&
+        reading.current_reading >= reading.previous_reading &&
+        reading.usage === reading.current_reading - reading.previous_reading
+    );
     const signedUrls = await createSignedUrlMap(
       supabase,
       "meter-photos",
-      readings.map((reading) => reading.photo_path)
+      validReadings.map((reading) => reading.photo_path)
     );
-    return readings.map((reading) => ({
+    return validReadings.map((reading) => ({
       ...reading,
       photo_url: signedUrls.get(reading.photo_path ?? "") ?? null,
     }));

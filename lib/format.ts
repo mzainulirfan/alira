@@ -20,19 +20,21 @@ export function formatMeter(value: number): string {
 }
 
 export function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = typeof date === "string" ? new Date(date + (date.length === 10 ? "T00:00:00Z" : "")) : date;
   return d.toLocaleDateString("id-ID", {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
 export function formatPeriod(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = typeof date === "string" ? new Date(date + (date.length === 10 ? "T00:00:00Z" : "")) : date;
   return d.toLocaleDateString("id-ID", {
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 

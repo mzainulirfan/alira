@@ -55,12 +55,22 @@ const statusDotClass = {
   cancelled: "bg-muted-2",
 } as const;
 
-function daysOverdue(bill: BillWithCustomer): number | null {
-  if (bill.status !== "overdue" || !bill.due_date) return null;
-  const due = new Date(`${bill.due_date}T00:00:00`);
+function isOverdue(bill: BillWithCustomer): boolean {
+  if (!bill.due_date) return bill.status === "overdue";
+  const due = new Date(`${bill.due_date}T00:00:00Z`);
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.floor((today.getTime() - due.getTime()) / 86_400_000);
+  today.setUTCHours(0, 0, 0, 0);
+  return bill.status === "overdue" || (bill.status === "unpaid" && due.getTime() < today.getTime());
+}
+
+function daysOverdue(bill: BillWithCustomer): number | null {
+  if (!bill.due_date) return null;
+  if (!isOverdue(bill)) return null;
+  const due = new Date(`${bill.due_date}T00:00:00Z`);
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const diff = Math.floor((today.getTime() - due.getTime()) / 86_400_000);
+  return diff > 0 ? diff : 0;
 }
 
 export function BillsClient({
@@ -106,7 +116,7 @@ export function BillsClient({
   }, []);
 
   const pendingCount = Math.max(0, readingCount - allBills.length);
-  const overdueCount = allBills.filter((b) => b.status === "overdue").length;
+  const overdueCount = allBills.filter((b) => isOverdue(b)).length;
 
   if (state !== lastState) {
     setLastState(state);
@@ -141,7 +151,7 @@ export function BillsClient({
 
   const counts = {
     all: allBills.length,
-    unpaid: allBills.filter((b) => b.status === "unpaid").length,
+    unpaid: allBills.filter((b) => b.status === "unpaid" && !isOverdue(b)).length,
     paid: allBills.filter((b) => b.status === "paid").length,
     overdue: overdueCount,
   };

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, randomInt, scrypt, timingSafeEqual } from "node:crypto";
 
 const SCRYPT_N = 32768;
 const SCRYPT_R = 8;
@@ -70,10 +70,12 @@ export async function verifyPasscode(
       maxmem: SCRYPT_MAXMEM,
     });
     const expectedBuffer = Buffer.from(expected, "hex");
-    return (
-      derived.length === expectedBuffer.length &&
-      timingSafeEqual(derived, expectedBuffer)
-    );
+    if (derived.length !== expectedBuffer.length) {
+      // Constant-time mitigation: still do a dummy compare to avoid timing oracle on length
+      timingSafeEqual(derived, derived);
+      return false;
+    }
+    return timingSafeEqual(derived, expectedBuffer);
   } catch {
     return false;
   }
@@ -97,13 +99,14 @@ function verifyLegacy(
     value = createHash("sha256").update(value).digest();
   }
   const expectedBuffer = Buffer.from(expected, "hex");
-  return (
-    value.length === expectedBuffer.length && timingSafeEqual(value, expectedBuffer)
-  );
+  if (value.length !== expectedBuffer.length) {
+    timingSafeEqual(value, value);
+    return false;
+  }
+  return timingSafeEqual(value, expectedBuffer);
 }
 
 export function generatePasscode(): string {
-  const buffer = randomBytes(4);
-  const num = buffer.readUInt32BE(0) % 1_000_000;
+  const num = randomInt(0, 1_000_000);
   return num.toString().padStart(6, "0");
 }

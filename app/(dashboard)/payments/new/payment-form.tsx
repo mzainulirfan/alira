@@ -63,9 +63,8 @@ export function PaymentForm({
       toast.success("Pembayaran tercatat. Tagihan lunas.");
       router.push(`/bills/${bill.id}`);
     } else if (state?.error) toast.error(state.error);
-  }, [state]);
+  }, [state, bill.id, router]);
 
-  const statusLabel = bill.status === "overdue" ? "Menunggak" : "Belum Dibayar";
   const cashReceivedAmount = Number(cashReceived) || 0;
   const cashDifference = cashReceivedAmount - bill.total_amount;
   const cashIsSufficient = paymentMethod === "transfer" || cashReceivedAmount >= bill.total_amount;

@@ -7,7 +7,6 @@ import {
   getBillReading,
 } from "@/lib/data/bills";
 import { getPaymentByBill } from "@/lib/data/payments";
-import { getAppSettings } from "@/lib/data/settings";
 import { BillDetailClient } from "./bill-detail-client";
 import { canManageFinance } from "@/lib/staff";
 
@@ -27,11 +26,10 @@ export default async function BillDetailPage({
   if (!bill) notFound();
 
   const canManagePayment = canManageFinance(session.role);
-  const [reading, adjacentBills, payment, settings] = await Promise.all([
+  const [reading, adjacentBills, payment] = await Promise.all([
     getBillReading(bill.meter_reading_id),
     getAdjacentCustomerBills(bill.customer.id, bill.period),
     canManagePayment ? getPaymentByBill(bill.id) : Promise.resolve(null),
-    getAppSettings(),
   ]);
 
   return (

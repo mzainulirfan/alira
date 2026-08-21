@@ -32,7 +32,9 @@ const getCachedActiveTariff = unstable_cache(
         "id, name, price_per_m3, monthly_fee, effective_date, is_active, created_at"
       )
       .eq("is_active", true)
-      .order("effective_date", { ascending: false })
+      .or("effective_date.is.null,effective_date.lte." + new Date().toISOString().slice(0, 10))
+      .order("effective_date", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 

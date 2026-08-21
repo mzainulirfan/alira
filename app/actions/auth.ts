@@ -18,6 +18,10 @@ export type LoginState = {
 };
 
 const CUSTOMER_NUMBER_REGEX = /^PAM-\d{6}$/;
+// Dummy hash for timing-equalization when user not found (prevents enumeration via timing)
+// scrypt$32768$8$1$<salt 32 hex>$<derived 128 hex>
+const DUMMY_STAFF_HASH =
+  "scrypt$32768$8$1$00000000000000000000000000000000$" + "00".repeat(64);
 
 export async function loginAction(
   _prevState: LoginState | undefined,
@@ -54,13 +58,16 @@ export async function loginAction(
     .maybeSingle();
 
   if (error || !data?.passcode_hash || data.status !== "active" || !isStaffRole(data.role)) {
+    // Timing mitigation: still run a hash verify to equalize response time
+    await verifyPasscode(passcode, DUMMY_STAFF_HASH);
     return { error: "Username atau passcode salah." };
   }
 
   const now = new Date();
   const lockedUntil = data.locked_until ? new Date(data.locked_until) : null;
   if (lockedUntil && lockedUntil > now) {
-    return { error: "Akun sementara dikunci. Coba kembali beberapa menit lagi." };
+    // Generic message to avoid confirming account existence/lock state
+    return { error: "Username atau passcode salah." };
   }
 
   const valid = await verifyPasscode(passcode, data.passcode_hash);
@@ -108,14 +115,18 @@ export async function loginAction(
     };
   }
 
-  // Rotasi session_epoch di setiap login → sesi lama (token curian) ikut dicabut
+  // Rotasi session_epoch atomik — cegah race dengan guard session_epoch + hash
   const sessionEpoch = crypto.randomUUID();
-  const { error: epochError } = await supabase
+  const { data: epochData, error: epochError } = await supabase
     .from("pam_profiles")
     .update({ session_epoch: sessionEpoch })
-    .eq("id", data.id);
-  if (epochError) {
-    console.error("[staff-login] gagal rotasi session_epoch:", epochError.message);
+    .eq("id", data.id)
+    .eq("session_epoch", result.session_epoch)
+    .eq("passcode_hash", data.passcode_hash)
+    .select("id")
+    .maybeSingle();
+  if (epochError || !epochData) {
+    console.error("[staff-login] gagal rotasi session_epoch:", epochError?.message ?? "conflict");
     return { error: "Gagal memverifikasi login. Coba kembali." };
   }
 
@@ -150,7 +161,8 @@ export async function logoutAction() {
     await supabase
       .from("pam_profiles")
       .update({ session_epoch: crypto.randomUUID() })
-      .eq("id", session.userId);
+      .eq("id", session.userId)
+      .eq("session_epoch", session.sessionEpoch);
   }
   await deleteSession();
   redirect("/login");

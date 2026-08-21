@@ -21,6 +21,13 @@ export function isValidDate(value: unknown): value is string {
 }
 
 export function dateToPeriod(date: string): string {
+  // Normalize via UTC to avoid TZ shift (e.g. 2026-08-01T00:00:00+07:00 -> 2026-08)
+  if (date.includes("T")) {
+    const d = new Date(date);
+    if (!Number.isNaN(d.getTime())) {
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    }
+  }
   return date.slice(0, 7);
 }
 

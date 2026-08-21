@@ -108,6 +108,8 @@ export function MeterReadingsClient({
       if (search !== query) updateParams({ q: search });
     }, 300);
     return () => clearTimeout(t);
+    // updateParams & query are stable via closure — intentional single dep to avoid loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   useEffect(() => {

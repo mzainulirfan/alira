@@ -16,7 +16,6 @@ import {
   QrCodeIcon,
   ArrowLeft01Icon,
 } from "@hugeicons/core-free-icons";
-import { Badge } from "@/components/ui/badge";
 import { verifySession } from "@/lib/auth/dal";
 import { getAppSettings } from "@/lib/data/settings";
 import { normalizeQuickActionKeys } from "@/lib/quick-actions";
