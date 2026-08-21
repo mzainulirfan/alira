@@ -287,21 +287,61 @@
 @media print {
   @page {
     size: A4;
-    margin: 14mm;
+    margin: 10mm;
   }
 
-  body:has([data-print-invoice]) {
+  /* Thermal receipt — centered 72mm on A4, hides invoice */
+  body:has([data-print-receipt]) {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  body:has([data-print-receipt]) > div aside,
+  body:has([data-print-receipt]) header,
+  body:has([data-print-receipt]) nav,
+  body:has([data-print-receipt]) [data-print-hide] {
+    display: none !important;
+  }
+
+  body:has([data-print-receipt]) main {
+    max-width: none !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  body:has([data-print-receipt]) [data-print-invoice] {
+    display: none !important;
+  }
+
+  [data-print-receipt] {
+    display: block !important;
+    width: 72mm !important;
+    max-width: 72mm !important;
+    margin: 0 auto !important;
+    padding: 3mm 4mm 4mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+    border: 1px dashed #999 !important;
+  }
+
+  /* Legacy invoice print keeps A4 for old view */
+  body:has([data-print-invoice]:not(:has([data-print-receipt]))) {
     background: #ffffff;
     color: #0f172a;
   }
 
-  body:has([data-print-invoice]) > div aside,
-  body:has([data-print-invoice]) header,
-  body:has([data-print-invoice]) nav {
+  body:has([data-print-invoice]:not(:has([data-print-receipt]))) > div aside,
+  body:has([data-print-invoice]:not(:has([data-print-receipt]))) header,
+  body:has([data-print-invoice]:not(:has([data-print-receipt]))) nav {
     display: none !important;
   }
 
-  body:has([data-print-invoice]) main {
+  body:has([data-print-invoice]:not(:has([data-print-receipt]))) main {
     max-width: none !important;
     padding: 0 !important;
   }
@@ -326,35 +366,58 @@
     padding: 0 !important;
   }
 
+  /* Bulk QR: hide UI, show only grid */
+  body:has([data-qr-print-page]) [data-qr-print-page] > [data-print-hide] {
+    display: none !important;
+  }
+
+  body:has([data-qr-print-page]) [data-qr-print-page] {
+    gap: 0 !important;
+  }
+
   [data-qr-print-grid] {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6mm;
+    gap: 4mm;
   }
 
-  body:has([data-print-customer-qr]) > * {
-    visibility: hidden;
+  [data-qr-print-grid] > div {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
-  body:has([data-print-customer-qr]) [data-slot="dialog-portal"],
-  body:has([data-print-customer-qr]) [data-slot="dialog-content"],
-  body:has([data-print-customer-qr]) [data-print-customer-qr] {
-    visibility: visible;
+  /* Single QR dialog — center card on A4, hide chrome */
+  body:has([data-print-customer-qr]) {
+    background: #ffffff;
   }
 
-  body:has([data-print-customer-qr]) [data-slot="dialog-overlay"],
-  body:has([data-print-customer-qr]) [data-slot="dialog-close"],
-  body:has([data-print-customer-qr]) [data-slot="dialog-header"] {
+  body:has([data-print-customer-qr]) > div aside,
+  body:has([data-print-customer-qr]) header,
+  body:has([data-print-customer-qr]) nav,
+  body:has([data-print-customer-qr]) main > *:not([data-slot="dialog-portal"]) {
+    display: none !important;
+  }
+
+  body:has([data-print-customer-qr]) [data-slot="dialog-overlay"] {
     display: none !important;
   }
 
   body:has([data-print-customer-qr]) [data-slot="dialog-content"] {
     position: static !important;
-    width: auto !important;
-    max-width: none !important;
+    width: 72mm !important;
+    max-width: 72mm !important;
+    margin: 0 auto !important;
     transform: none !important;
-    padding: 0 !important;
+    padding: 6mm !important;
     box-shadow: none !important;
+    border: 1px dashed #999 !important;
+    background: #ffffff !important;
+  }
+
+  body:has([data-print-customer-qr]) [data-slot="dialog-close"],
+  body:has([data-print-customer-qr]) [data-slot="dialog-header"],
+  body:has([data-print-customer-qr]) [data-print-hide] {
+    display: none !important;
   }
 
   [data-print-hide] {

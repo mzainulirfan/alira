@@ -34,6 +34,7 @@ export function BillDetailClient({
   payment,
   previousBill,
   nextBill,
+  settings,
 }: {
   bill: BillWithCustomer;
   reading: MeterReading | null;
@@ -41,15 +42,23 @@ export function BillDetailClient({
   payment: PaymentDetail | null;
   previousBill: AdjacentBill | null;
   nextBill: AdjacentBill | null;
+  settings: { pam_name: string; address: string | null; phone: string | null };
 }) {
   const statusDescription = getStatusDescription(bill, payment);
   const whatsappUrl = getWhatsappUrl(bill);
 
   return (
-    <div
-      data-print-invoice
-      className="mx-auto flex w-full max-w-3xl flex-col gap-5 print:max-w-none"
-    >
+    <>
+      <div
+        data-print-receipt
+        className="hidden print:block"
+      >
+        <BillReceipt bill={bill} reading={reading} payment={payment} settings={settings} />
+      </div>
+      <div
+        data-print-invoice
+        className="mx-auto flex w-full max-w-3xl flex-col gap-5 print:max-w-none"
+      >
       <div data-print-hide className="flex items-end justify-between gap-3">
         <Link href="/bills" className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-aqua-light text-aqua transition-colors hover:bg-aqua/80">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={22} />
@@ -231,9 +240,90 @@ export function BillDetailClient({
         </Button>
         <Button variant="outline" className="rounded-[10px] border-line" onClick={() => window.print()}>
           <HugeiconsIcon icon={PrinterIcon} />
-          Cetak / PDF
+          Cetak Struk
         </Button>
       </div>
+      <div data-print-hide className="rounded-[10px] border border-dashed border-line bg-paper/50 p-3 text-center">
+        <p className="font-mono text-[10.5px] text-muted-2">Pratinjau struk 80mm akan tampil saat cetak (Ctrl+P). Untuk printer thermal, pilih ukuran kertas 80mm.</p>
+      </div>
+    </div>
+    </>
+  );
+}
+
+function BillReceipt({
+  bill,
+  reading,
+  payment,
+  settings,
+}: {
+  bill: BillWithCustomer;
+  reading: MeterReading | null;
+  payment: PaymentDetail | null;
+  settings: { pam_name: string; address: string | null; phone: string | null };
+}) {
+  const now = new Date();
+  const isPaid = bill.status === "paid";
+  const isOverdue = bill.status === "overdue";
+  return (
+    <div className="font-mono text-[9px] leading-[1.35] text-black">
+      {/* Header — compact */}
+      <div className="text-center leading-tight">
+        <p className="text-[12px] font-bold uppercase tracking-[0.03em]">{settings.pam_name}</p>
+        {settings.address && <p className="text-[7.5px] text-black/60">{settings.address}</p>}
+        {settings.phone && <p className="text-[7.5px] text-black/60">Telp {settings.phone}</p>}
+      </div>
+      <div className="my-1.5 border-t border-dashed border-black" />
+      <div className="text-center leading-tight">
+        <p className="text-[9px] font-bold uppercase tracking-[0.06em]">{isPaid ? "KWITANSI" : "STRUK TAGIHAN"}</p>
+        <p className="text-[7.5px] text-black/60">{formatShortPeriod(bill.period)} • {bill.customer.customer_number}</p>
+      </div>
+      <div className="my-1.5 border-t border-dashed border-black" />
+      {/* Pelanggan — 2 baris */}
+      <div className="text-[8.5px] leading-tight">
+        <div className="flex justify-between gap-2"><span className="text-black/50">Pelanggan</span><span className="truncate font-semibold text-right">{bill.customer.name}</span></div>
+        <div className="flex justify-between gap-2 text-[7.5px] text-black/50"><span>{bill.customer.customer_number}{bill.customer.meter_number ? ` • ${bill.customer.meter_number}` : ""}</span><span>{bill.customer.phone ?? ""}</span></div>
+      </div>
+      <div className="my-1.5 border-t border-dashed border-black" />
+      {/* Meter — compact grid */}
+      <div className="grid grid-cols-3 gap-1 text-center text-[8.5px] leading-tight">
+        <div><p className="text-black/50">Lalu</p><p className="font-semibold">{reading ? formatMeter(reading.previous_reading) : "-"}</p></div>
+        <div><p className="text-black/50">Kini</p><p className="font-semibold">{reading ? formatMeter(reading.current_reading) : "-"}</p></div>
+        <div><p className="text-black/50">Pakai</p><p className="font-bold">{formatMeter(bill.usage)} m³</p></div>
+      </div>
+      <div className="mt-1 flex justify-between text-[7.5px] text-black/50"><span>Periode {formatShortPeriod(bill.period)}</span><span>{bill.price_per_m3 ? `${formatCurrency(bill.price_per_m3)}/m³` : ""}</span></div>
+      <div className="my-1.5 border-t border-dashed border-black" />
+      {/* Rincian — compact */}
+      <div className="space-y-0.5 text-[8.5px]">
+        <div className="flex justify-between"><span className="text-black/50">Air ({formatMeter(bill.usage)}×{bill.price_per_m3 ? formatCurrency(bill.price_per_m3) : "-"})</span><span>{formatCurrency(bill.water_amount)}</span></div>
+        <div className="flex justify-between"><span className="text-black/50">Abonemen</span><span>{formatCurrency(bill.monthly_fee)}</span></div>
+        <div className="flex justify-between border-t border-black pt-1 text-[11px] font-bold"><span>TOTAL</span><span>{formatCurrency(bill.total_amount)}</span></div>
+        <div className="flex justify-between text-[7px] text-black/50"><span>{isPaid ? "LUNAS" : isOverdue ? "MENUNGGAK" : "BELUM BAYAR"}{bill.due_date ? ` • J Tempo ${formatDate(bill.due_date)}` : ""}</span><span>{isPaid ? "✔" : ""}</span></div>
+      </div>
+      {payment && (
+        <>
+          <div className="my-1.5 border-t border-dashed border-black" />
+          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[7.5px] leading-tight">
+            <span className="text-black/50">Tgl bayar</span><span className="text-right">{formatDate(payment.payment_date)}</span>
+            <span className="text-black/50">Metode</span><span className="text-right uppercase">{payment.payment_method === "cash" ? "Tunai" : "Transfer"}</span>
+            {payment.receiver_name && <><span className="text-black/50">Petugas</span><span className="truncate text-right">{payment.receiver_name}</span></>}
+          </div>
+        </>
+      )}
+      <div className="my-1.5 border-t border-dashed border-black" />
+      <div className="text-center text-[6.5px] leading-tight text-black/50">
+        <p>Terima kasih • Simpan sebagai bukti sah</p>
+        <p>{now.toLocaleDateString("id-ID")} {now.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})} • {bill.customer.customer_number}</p>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="shrink-0 text-black/60">{label}</span>
+      <span className="truncate text-right font-semibold">{value}</span>
     </div>
   );
 }

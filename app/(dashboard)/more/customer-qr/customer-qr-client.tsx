@@ -55,7 +55,7 @@ export function CustomerQrClient({ customers }: { customers: Customer[] }) {
 
   return (
     <div data-qr-print-page className="flex flex-col gap-5">
-      <div className="flex items-end justify-between gap-3">
+      <div data-print-hide className="flex items-end justify-between gap-3">
         <Link href="/more" className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-aqua-light text-aqua transition-colors hover:bg-aqua/80">
           <HugeiconsIcon icon={ArrowLeft01Icon} size={22} />
         </Link>
@@ -68,11 +68,11 @@ export function CustomerQrClient({ customers }: { customers: Customer[] }) {
           </p>
         </div>
         <Button variant="outline" className="rounded-[10px] border-line" onClick={() => window.print()}>
-          <HugeiconsIcon icon={PrinterIcon} /> Cetak
+          <HugeiconsIcon icon={PrinterIcon} /> Cetak {selected.size} QR
         </Button>
       </div>
 
-      <section className="flex flex-col">
+      <section data-print-hide className="flex flex-col">
         <SectionHeading title="Pilih Pelanggan" />
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-52 flex-1">
@@ -108,9 +108,9 @@ export function CustomerQrClient({ customers }: { customers: Customer[] }) {
       </section>
 
       {filtered.length === 0 ? (
-        <EmptyState />
+        <div data-print-hide><EmptyState /></div>
       ) : (
-        <section className="flex flex-col">
+        <section data-print-hide className="flex flex-col">
           <SectionHeading title="Daftar Pelanggan" />
           <div className="rounded-[14px] border border-line bg-card divide-y divide-dashed divide-line">
             {filtered.map((customer) => (
@@ -163,21 +163,21 @@ function EmptyState() {
 
 function QrPrintLabel({ customer }: { customer: Customer }) {
   return (
-    <div className="flex break-inside-avoid flex-col items-center border border-slate-300 p-4 text-center text-slate-950">
+    <div className="flex break-inside-avoid flex-col items-center border border-dashed border-slate-400 bg-white p-3 text-center text-slate-950">
       <QRCodeSVG
         value={createCustomerQrPayload(customer.customer_number)}
-        size={150}
+        size={140}
         level="M"
         marginSize={1}
         title={`QR ${customer.customer_number}`}
       />
-      <p className="mt-2 font-display text-[13px] font-semibold text-petrol">{customer.name}</p>
-      <p className="font-mono text-xs font-medium">{customer.customer_number}</p>
-      <p className="mt-0.5 text-[10px] text-muted-2">
-        {customer.meter_number ? `Meter ${customer.meter_number}` : "Tanpa nomor meter"}
+      <p className="mt-1.5 truncate w-full font-display text-[11px] font-semibold leading-tight text-petrol">{customer.name}</p>
+      <p className="font-mono text-[10px] font-medium leading-none">{customer.customer_number}</p>
+      <p className="mt-0.5 text-[8px] leading-none text-muted-2">
+        {customer.meter_number ? `Meter ${customer.meter_number}` : "Tanpa meter"}
       </p>
-      <p className="mt-1 text-[9px] font-medium tracking-wide text-muted-2 uppercase">
-        Scan dengan Alira
+      <p className="mt-1 text-[7px] font-medium tracking-wide text-muted-2 uppercase">
+        Scan Alira
       </p>
     </div>
   );
